@@ -8,7 +8,7 @@ We present a phishing detection tool that enables research on zero-hour detectio
 
 ## Usage
 First, dependencies in [requirements.txt](requirements.txt) and python3 shall be installed.
-Then, there are two steps to test the scripts:
+Then, there are several steps to test the scripts:
 - [Flask API](api.py) starts the flask API server with `python3 api.py` (or via `flask app run`, keep in mind the `PATH` variables for this)
 	- The server runs locally on port 5000
 	- POST requests can be built, such as:
