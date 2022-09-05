@@ -17,7 +17,7 @@ Then, there are several steps to test the scripts:
 		- > "uuid": "63054094-01c4-11ed-b939-0242ac120002", # "client uuid" (any text is valid)
 		- > "pagetitle": "Lebensversicherung von 1871 a. G. München",
 		- > "image64": "",	#optional
-		- > "phishURL" : "http://bogusurl1.co.uk"	#optioinal
+		- > "phishURL" : "http://bogusurl1.co.uk"	#optional
 		- >}
 	- the output of the process can be found in [sessions.db](db/sessions.db) and [output_operational.db](db/output_operational.db)
 - [evaluation](evaluation) contains scripts to automate the evaluation from a sample of phishing/non-phishing sites
