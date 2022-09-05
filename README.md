@@ -19,8 +19,9 @@ Then, there are two steps to test the scripts:
 		- > "image64": "",
 		- > "phishURL" : "http://bogusurl1.co.uk"
 		- >}
-	- the output of the process can be found in [session.db](db/session.db) and [output_operational.db](db/output_operational.db)
+	- the output of the process can be found in [sessions.db](db/sessions.db) and [output_operational.db](db/output_operational.db)
 - [evaluation](evaluation) contains scripts to automate the evaluation from a sample of phishing/non-phishing sites
+	- The used dataset for sampling benign and phishing data can be found [here](https://surfdrive.surf.nl/files/index.php/s/xndCmdvb7yzM8ED).
 - [check-classifiers.py](check-classifiers.py) and [hit-verifier.py](hit-verifier.py) are middleware to pre-process `output_operational.db` for the evaluation
 - [ROC.py](ROC.py) carries out the final evaluation with two databases as input ('phishing' and 'benign')
 
