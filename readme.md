@@ -1,10 +1,7 @@
-Due to exploratory nature of the project alot of overhead exists in the codebase. (e.g., different search engines)
-If just the main contribution is required then please inspect:
-	/utils/regiondetection.py   -> _findregions(...)
-Which contains the converting of a image file into seperate regions as discussed within the paper.
+Due to exploratory nature of the project a lot of overhead exists in the codebase. (e.g., different search engines)
 
 ----
-Layout of files within the codebase:
+OLD Layout of files within the codebase:
 ----
 
 main.py
