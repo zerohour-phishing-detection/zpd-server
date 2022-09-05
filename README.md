@@ -12,13 +12,13 @@ Then, there are two steps to test the scripts:
 - [Flask API](api.py) start the flask API server with `python3 api.py` (or via `flask app run`, keep in mind the `PATH` variables for this)
 	- The server runs locally on port 5000
 	- POST request can be built, such as:
->>test_json = {
->> "URL": "https://idsrv.lv1871.de/Login",
->> "uuid": "63054094-01c4-11ed-b939-0242ac120002",
->> "pagetitle": "Lebensversicherung von 1871 a. G. München",
->> "image64": "",
->> "phishURL" : "http://bogusurl1.co.uk"
->>}
+	- >test_json = {
+	> "URL": "https://idsrv.lv1871.de/Login",
+	> "uuid": "63054094-01c4-11ed-b939-0242ac120002",
+	> "pagetitle": "Lebensversicherung von 1871 a. G. München",
+	> "image64": "",
+	> "phishURL" : "http://bogusurl1.co.uk"
+	>}
 
 Acknowledgment:
 The authors wish to express their gratitude to Ardela Isuf and Sam Cantineau for their work in this project.
