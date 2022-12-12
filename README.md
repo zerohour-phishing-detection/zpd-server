@@ -1,10 +1,13 @@
 # A decision-support tool for experimentation on zero-hour phishing detection
-Code and test data for anti-phishing tool: A decision-support tool for experimentation on zero-hour phishing detection (in submission) - Pavlo Burda, Luca Allodi and Nicola Zannone, Eindhoven University of Technology, The Netherlands
+Code and test data for an anti-phishing tool: A decision-support tool for experimentation on zero-hour phishing detection (in submission) - Pavlo Burda, Luca Allodi and Nicola Zannone, Eindhoven University of Technology, The Netherlands - FPS 2022
 
 ## Abstract
->New, sophisticated phishing campaigns victimize targets in few hours from attack delivery.
-Some techniques can spot these zero-hour attacks, at the cost of additional user intervention. Further research is needed to fill this gap.
-We present a phishing detection tool that enables research on zero-hour detection and user intervention trade-offs.
+>New, sophisticated phishing campaigns victimize targets in few hours from attack delivery. 
+Some methods, such as visual similarity-based techniques, can spot these zero-hour attacks, at the cost of addi user intervention.
+However, more research is needed to investigate trade-off between automatic detection and user intervention. 
+To en this line of research, we present a phishing detection tool that can used to instrument scientific research in this direction.
+The tool can be used for experimentation on assisting user decision-making, evaluating user trust in detection, and keeping track of users’ previous “bad”
+decisions.
 
 ## Usage
 First, dependencies in [requirements.txt](requirements.txt) and python3 shall be installed.
