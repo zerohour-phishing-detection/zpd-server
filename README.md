@@ -1,8 +1,7 @@
 # A decision-support tool for experimentation on zero-hour phishing detection
 Code and test data for: 
 
-A Decision-Support Tool for Experimentation on Zero-Hour Phishing Detection. Burda, Pavlo, Luca Allodi, and Nicola Zannone. 2022. 
-In Foundations and Practice of Security (FPS), 443–52., Springer.
+A Decision-Support Tool for Experimentation on Zero-Hour Phishing Detection. Burda, P., Allodi, L., Zannone, N. (2023). In: Foundations and Practice of Security. FPS 2022. LNCS, vol 13877. Springer. https://doi.org/10.1007/978-3-031-30122-3_27
 
 ## Abstract
 >New, sophisticated phishing campaigns victimize targets in few hours from attack delivery. 
