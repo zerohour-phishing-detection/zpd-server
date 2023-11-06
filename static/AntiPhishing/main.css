@@ -1,0 +1,128 @@
+body {
+  width: 250px;
+  height: 400px;
+  text-align: center;
+}
+
+#progressdiv {
+  text-align: left;
+  display: none;
+  margin-left: 8px;
+}
+
+#get-state-button {
+  background-color: white;
+  color: black;
+  border: 2px solid #4CAF50;
+  padding: 4px 15px;
+  text-align: center;
+  display: none;
+  font-size: 12px;
+  margin: 4px 2px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+#get-state-button:hover {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.checkmark {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: #4CAF50;
+  border-radius: 50%;
+  -ms-transform: rotate(45deg);
+  /* IE 9 */
+  -webkit-transform: rotate(45deg);
+  /* Chrome, Safari, Opera */
+  transform: rotate(45deg);
+  margin-left: 10px;
+}
+
+.checkmark:before {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 9px;
+  background-color: #fff;
+  left: 5px;
+  top: 1px;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background-color: #fff;
+  left: 3px;
+  top: 7px;
+}
+
+#progresstitle {
+  margin-bottom: 3px;
+}
+
+#phishinglist {
+  height: 125px;
+  overflow-y: auto;
+}
+
+.sitename {
+  float: left;
+  width: 65%;
+  max-height: 56px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.sitename > span {
+  word-wrap: break-word;
+}
+
+.actions {
+  width: 30%;
+  float: right;
+}
+
+.actionbutton {
+  width: 70px;
+  height: 50%;
+  background-color: white;
+  color: black;
+  border: 2px solid #e3f300;
+  padding: 4px 5px;
+  text-align: center;
+  font-size: 12px;
+  margin: 1px 0px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+}
+
+.actionbutton:hover {
+  background-color: #e3f300;
+  color: white;
+}
+
+.whitelistbutton {
+  border: 2px solid #4CAF50;
+}
+
+.whitelistbutton:hover {
+  background-color: #4CAF50;
+}
+
+.itemwrapper {
+  border-bottom: 1px solid black;
+  padding: 10px 5px;
+  min-height: 56px;
+}
+
+.sitename::-webkit-scrollbar {
+  display: none;
+}
+
