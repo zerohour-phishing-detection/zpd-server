@@ -2,7 +2,7 @@ import json
 import base64
 import os
 from PIL import Image
-from webdriver_manager.driver import ChromeDriver
+from webdriver_manager.chrome import ChromeDriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver

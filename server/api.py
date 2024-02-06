@@ -1,13 +1,12 @@
 from requests_html import HTMLSession
-import flask
-from flask import request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_file, send_from_directory, render_template
 import hashlib
 from collections import defaultdict
 import socket
 import ssl
 import tldextract
 
-from webdriver_manager.driver import ChromeDriver
+from webdriver_manager.chrome import ChromeDriver
 from utils.customlogger import CustomLogger
 import time
 from datetime import datetime
@@ -27,6 +26,7 @@ import utils.classifiers as cl
 import joblib
 from utils.sessions import Sessions
 import utils.appendsandomains as appdom
+
 #to avoid RuntimeError('This event loop is already running') when there are many of requests
 import nest_asyncio
 
@@ -46,12 +46,12 @@ sessions = Sessions(session_db, False)
 # sets the load page timeout for the web driver
 webdriver_timeout = 5
 
-app = flask.Flask(__name__)
+app = Flask(__name__)
 app.config["DEBUG"] = False
 
 @app.route('/', methods=['GET'])
 def home():
-    return "<h1>Seminar project, anti-phishing browser plug-in</h1><p>This site is a prototype API for the seminar anti-phishing browser plug-in featured in<br>'A decision-support tool for experimentation on zero-hour phishing detection.'</p>"
+    return render_template('index.html')
 
 @app.route('/stop', methods=['GET'])
 def shutdown():
@@ -59,10 +59,11 @@ def shutdown():
     return 'Server shutting down...'
     
 def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
+    # func = request.environ.get('werkzeug.server.shutdown')
+    # if func is None:
+    #     raise RuntimeError('Not running with the Werkzeug Server')
+    # func()
+    os._exit(0)
 
 @app.route('/api/v1/url', methods=['POST'])
 def check_url():
@@ -399,7 +400,7 @@ def get_idealista_success():
 nest_asyncio.apply()
 
 app.run(host="0.0.0.0")
-# app.run(host="localhost")
+
 # used for local test with VM
 # app.run(host="192.168.56.100")
 

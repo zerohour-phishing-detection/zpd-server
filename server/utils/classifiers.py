@@ -1,5 +1,5 @@
 import warnings
-from skimage.measure import compare_ssim
+from skimage.metrics import structural_similarity
 from skimage.transform import resize
 from scipy.stats import wasserstein_distance
 from imageio import imread
