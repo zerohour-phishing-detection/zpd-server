@@ -238,7 +238,7 @@ def check_url():
     # initialize web driver by installing a fresh version of it
     #driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
     # replaces the above with a fixed ChromeDriver
-    driver = webdriver.Chrome('/home/antip/Desktop/codebase/webdriver/94.0.4606.113/chromedriver', options=options)
+    driver = webdriver.Chrome(options=options)
     driver.set_window_size(image_width, image_height)
     driver.set_page_load_timeout(webdriver_timeout)
 

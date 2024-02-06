@@ -23,7 +23,7 @@ class Parsing():
 
         title = json['pagetitle']
         if not os.path.exists(store):
-            os.mkdir(store)
+            os.makedirs(store)
 
         if clientscreen:
             st = len("data:image/png;base64,")
@@ -39,7 +39,7 @@ class Parsing():
 
             #driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
             # replaces the above with a fixed ChromeDriver
-            driver = webdriver.Chrome('/home/antip/Desktop/codebase/webdriver/94.0.4606.113/chromedriver', options=options)
+            driver = webdriver.Chrome(options=options)
             driver.set_window_size(1280, 768)
             driver.get(target_URL)
             screenshot = driver.save_screenshot(store + "/screen.png")
