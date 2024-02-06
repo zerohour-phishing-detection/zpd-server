@@ -13,6 +13,7 @@ from datetime import datetime
 import logging
 import os
 import searchengine
+import signal
 from parsing import Parsing
 from utils.reverseimagesearch import ReverseImageSearch
 from engines.google import GoogleReverseImageSearchEngine
@@ -78,10 +79,8 @@ def check_url():
 
     # extra json field for evaluation purposes
     # the hash computed in the DB is the this one
-    phish_url = json["phishURL"]
-
-    if phish_url:
-        url = phish_url
+    if "phish_url" in json:
+        url = json["phishURL"]
         main_logger.info("Real URL changed to phishURL: " + str(url) + "\n")
     else:
         main_logger.info("Not a phish URL, real URL") # + str(phish_url)) 	
@@ -398,6 +397,11 @@ def get_idealista_success():
 # Using this lib to avoid runtimerror with many requests
 #__import__('IPython').embed()
 nest_asyncio.apply()
+
+# Handle CTRL+C for shutdown
+def signal_handler(sig, frame):
+    shutdown_server()
+signal.signal(signal.SIGINT, signal_handler)
 
 app.run(host="0.0.0.0")
 
