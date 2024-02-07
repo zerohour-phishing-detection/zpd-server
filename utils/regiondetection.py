@@ -135,7 +135,7 @@ def _findregions(image, imgpath, draw=True, highlightname="Highlight", invert=Tr
 
             # Adding small padding to image for slight context and better search accuracy
             margin=5
-            r = image[y-margin:y+h+margin, x-margin:x+w+margin]
+            r = image[max(0, y-margin):y+h+margin, max(0, x-margin):x+w+margin]
 
             image_width, image_height = Image.open(imgpath).size
 
