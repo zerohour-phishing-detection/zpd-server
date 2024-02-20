@@ -21,7 +21,7 @@ def search_image_all(self, img_path, shahash):
         regionFindST = time.time()
         ######
 
-        region_find(self, img_path, shahash)
+        region_find(self, poi, search_engine, img_path, shahash)
         ######
 
         regionFindSPT = time.time()
