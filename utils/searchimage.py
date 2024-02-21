@@ -43,14 +43,11 @@ def search_image_all(self, img_path, shahash):
 
         text_search(self, search_engine, search_terms, shahash)
 
-            # Destroy all lingering chrome handles and setup proxies
-            #self._main_logger.info("Killing lingering chrome proc")
-            #os.system("killall -9 chrome")
     except Exception as err:
         self._main_logger.error(err, exc_info=True)
         self.conn_storage.rollback()
         return False
-    #self.conn_storage.commit()
+
     return True
 
 
