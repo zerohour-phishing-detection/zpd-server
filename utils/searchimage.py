@@ -57,21 +57,25 @@ def search_image_all(self, img_path, shahash):
 
 def region_find(self, img_path, shahash):
     """
-    Find regions in an image, put the regions with attributes in the storage of self. Calculate the probabilities of a region being a logo and store it.
+    Find regions in an image, put the regions with attributes in the storage of self. 
+    Calculate the probabilities of a region being a logo and store it.
     """
 
     poi, imgdata = regiondetection.findregions(img_path)
     self._main_logger.info("Regions found: " + str(len(poi)))
     try:
-        self.conn_storage.execute("INSERT INTO screen_info (filepath, width, height, colourcount, dominant_colour_pct) VALUES (?, ?, ?, ?, ?)", (shahash, imgdata[2], imgdata[1], imgdata[0][0], imgdata[0][1]))
+        self.conn_storage.execute("INSERT INTO screen_info (filepath, width, height, colourcount, dominant_colour_pct) VALUES (?, ?, ?, ?, ?)", 
+                                  (shahash, imgdata[2], imgdata[1], imgdata[0][0], imgdata[0][1]))
         self._main_logger.debug("(filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert)")
         for region in poi:
             h, w, c = region[0].shape
             self._main_logger.debug(f"({shahash}, {region[1]}, {w}, {h}, {region[2]}, {region[3]}, {region[4]}, {region[5]}, {region[6][2]}, {region[6][3]})")
             logo_prob = self.clf_logo.predict_proba([[w, h, region[2], region[3], region[4], region[5], region[8], region[9], region[10], region[11], region[12], region[13], region[14], region[15]]])[:, 1][0]
-            self.conn_storage.execute("INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)", (shahash, region[1], w, h, region[2], region[3], region[4], region[5], region[6][2], region[6][3], region[7], region[8], region[9], region[10], region[11], region[12], region[13], region[14], region[15], "", logo_prob))
+            self.conn_storage.execute("INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)", 
+                                      (shahash, region[1], w, h, region[2], region[3], region[4], region[5], region[6][2], region[6][3], region[7], region[8], region[9], region[10], region[11], region[12], region[13], region[14], region[15], "", logo_prob))
         if self.clearbit:
-            self.conn_storage.execute("INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)", (shahash, 9999, 0, 0, 0, 0, 0, 0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, "clearbit", 1))
+            self.conn_storage.execute("INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)", 
+                                      (shahash, 9999, 0, 0, 0, 0, 0, 0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, "clearbit", 1))
         self.conn_storage.commit()
     except Exception as err:
         self._main_logger.error(err, exc_info=True)
