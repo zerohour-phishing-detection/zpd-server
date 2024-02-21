@@ -22,7 +22,6 @@ class ReverseImageSearch():
     clearbit = False
     tld = None
 
-
     _main_logger = CustomLogger().main_logger
 
     def __init__(self, storage=None, search_engine=None, folder=None, upload=True, mode=None, htmlsession=None, clf=None, clearbit=False, tld=None):
@@ -57,26 +56,28 @@ class ReverseImageSearch():
         try:
             sql_q_db = '''
                 CREATE TABLE IF NOT EXISTS "search_result_image" (
-                            "filepath"	string,
-                            "search_engine"	string,
-                            "region"	integer,
+                            "filepath" string,
+                            "search_engine" string,
+                            "region" integer,
                             "entry"	integer,
                             "result" string
                         );'''
             self.conn_storage.execute(sql_q_db)
+            
             sql_q_db = '''
                 CREATE TABLE IF NOT EXISTS "search_result_text" (
-                            "filepath"	string,
-                            "search_engine"	string,
-                            "search_terms"	string,
-                            "entry"	integer,
+                            "filepath" string,
+                            "search_engine" string,
+                            "search_terms" string,
+                            "entry" integer,
                             "result" string
                         );'''
             self.conn_storage.execute(sql_q_db)
+            
             sql_q_db = '''
                 CREATE TABLE IF NOT EXISTS "region_info" (
-                            "filepath"	string,
-                            "region"	integer,
+                            "filepath" string,
+                            "region" integer,
                             "width"	integer,
                             "height" integer,
                             "xcoord" integer,
@@ -98,6 +99,7 @@ class ReverseImageSearch():
                             "logo_prob" float
                         );'''
             self.conn_storage.execute(sql_q_db)
+            
             sql_q_db = '''
                 CREATE TABLE IF NOT EXISTS "screen_info" (
                             "filepath"	string,
@@ -107,7 +109,9 @@ class ReverseImageSearch():
                             "dominant_colour_pct" integer
                         );'''
             self.conn_storage.execute(sql_q_db)
+            
             self.conn_storage.commit()
+            
         except sqlite3.Error as er:
             self._main_logger.error("Failed to create table")
             self._main_logger.error(er)
