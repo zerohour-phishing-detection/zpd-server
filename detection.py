@@ -28,6 +28,8 @@ SESSION_FILE_STORAGE_PATH = "files/"
 DB_PATH_OUTPUT = "db/output_operational.db"
 # Database path for the sessions
 DB_PATH_SESSIONS = "db/sessions.db"
+if not os.path.isdir('db'):
+    os.mkdir('db')
 
 # Page loading timeout for web driver
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
