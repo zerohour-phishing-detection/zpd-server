@@ -239,8 +239,8 @@ def check_search_results(uuid, url, url_hash, url_registered_domain, found_urls)
             domain = domains.get_hostname(urls)
             try:
                 san_names = [domain] + domains.get_san_names(domain)
-            except:
-                main_logger.error(f'Error in SAN for {domain}')
+            except Exception as e:
+                main_logger.error(f'Error in SAN for {domain}', exc_info=1)
                 continue
             
             for hostname in san_names:
