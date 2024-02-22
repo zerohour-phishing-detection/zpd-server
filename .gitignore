@@ -11,3 +11,4 @@ venv/
 ignore
 
 files/
+db/
