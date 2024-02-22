@@ -11,13 +11,13 @@ def get_san_names(domain):
     with socket.create_connection((domain, 443), timeout=2) as sock:
         with context.wrap_socket(sock, server_hostname=domain) as ssock:
             cert = ssock.getpeercert()
-            san = {}
+            sans = {}
             for type_, san in cert['subjectAltName']:
-                if type_ in san:
-                    san[type_] = []
-                san[type_].append(san)
+                if type_ not in sans:
+                    sans[type_] = []
+                sans[type_].append(san)
             
-            return san['DNS']
+            return sans['DNS']
 
 def get_registered_domain(hostname):
     """
