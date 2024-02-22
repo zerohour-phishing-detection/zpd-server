@@ -5,7 +5,8 @@ import numpy as np
 
 from utils.customlogger import CustomLogger
 import utils.utils as ut
-import utils.regiondetection as regiondetection    
+import utils.region_detection as region_detection
+from utils.region_detection import RegionData    
 
 import searchengine
 
@@ -164,7 +165,7 @@ class ReverseImageSearch():
         Calculate the probabilities of a region being a logo and store it.
         """
 
-        poi, imgdata = regiondetection.findregions(img_path)
+        poi, imgdata = region_detection.find_regions(img_path)
         self._main_logger.info("Regions found: " + str(len(poi)))
         
         try:
@@ -172,12 +173,12 @@ class ReverseImageSearch():
                                     (sha_hash, imgdata[2], imgdata[1], imgdata[0][0], imgdata[0][1]))
             self._main_logger.debug("(filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert)")
             
-            for region in poi:
-                h, w, _ = region[0].shape
-                self._main_logger.debug(f"({sha_hash}, {region[1]}, {w}, {h}, {region[2]}, {region[3]}, {region[4]}, {region[5]}, {region[6][2]}, {region[6][3]})")
-                logo_prob = self.clf_logo.predict_proba([[w, h, region[2], region[3], region[4], region[5], region[8], region[9], region[10], region[11], region[12], region[13], region[14], region[15]]])[:, 1][0]
+            for region_data in poi:
+                h, w, _ = region_data.region.shape
+                self._main_logger.debug(f"({sha_hash}, {region_data.index}, {w}, {h}, {region_data.x}, {region_data.y}, {region_data.unique_colors_count}, {region_data.pct}, {region_data.hierarchy[2]}, {region_data.hierarchy[3]})")
+                logo_prob = self.clf_logo.predict_proba([[w, h, region_data.x, region_data.y, region_data.unique_colors_count, region_data.pct, region_data.mean, region_data.std, region_data.skew, region_data.kurtosis, region_data.entropy, region_data.otsu, region_data.energy, region_data.occupied_bins]])[:, 1][0]
                 self.conn_storage.execute("INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)", 
-                                        (sha_hash, region[1], w, h, region[2], region[3], region[4], region[5], region[6][2], region[6][3], region[7], region[8], region[9], region[10], region[11], region[12], region[13], region[14], region[15], "", logo_prob))
+                                        (sha_hash, region_data.index, w, h, region_data.x, region_data.y, region_data.unique_colors_count, region_data.pct, region_data.hierarchy[2], region_data.hierarchy[3], region_data.invert, region_data.mean, region_data.std, region_data.skew, region_data.kurtosis, region_data.entropy, region_data.otsu, region_data.energy, region_data.occupied_bins, "", logo_prob))
             if self.clearbit:
                 self.conn_storage.execute("INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)", 
                                         (sha_hash, 9999, 0, 0, 0, 0, 0, 0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, "clearbit", 1))
@@ -189,7 +190,7 @@ class ReverseImageSearch():
             self._main_logger.error(err, exc_info=True)
             self.conn_storage.rollback()
 
-    def _rev_image_search(self, poi, search_engine, sha_hash):
+    def _rev_image_search(self, poi : list[RegionData], search_engine, sha_hash):
         """
         Reverse image search and store 7 image matches results. Also clearbit functionality.
         """
@@ -198,17 +199,17 @@ class ReverseImageSearch():
         if self.mode == "both" or self.mode == "image":
             topx = self.conn_storage.execute(f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3").fetchall()
             
-            for region in poi:
-                if not ((sha_hash, region[1], region[7]) in topx):
+            for region_data in poi:
+                if not ((sha_hash, region_data.index, region_data.invert) in topx):
                     continue
                 
-                self._main_logger.info(f"Handling region {region[1]}")
+                self._main_logger.info(f"Handling region {region_data.index}")
 
-                res = search_engine.get_n_image_matches(self.htmlsession, region[0], n=7)
+                res = search_engine.get_n_image_matches(self.htmlsession, region_data.region, n=7)
                 count_entry = 0
                 
                 for result in res:
-                    self.conn_storage.execute("INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)", (sha_hash, search_engine.name, region[1], count_entry, result))
+                    self.conn_storage.execute("INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)", (sha_hash, search_engine.name, region_data[1], count_entry, result))
                     count_entry += 1
                     self.conn_storage.commit()
                     

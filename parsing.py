@@ -6,7 +6,7 @@ from webdriver_manager.chrome import ChromeDriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
-import utils.regiondetection as rd
+import utils.region_detection as rd
 
 class Parsing():
 
