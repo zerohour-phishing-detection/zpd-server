@@ -4,6 +4,9 @@ import time
 import requests
 
 class CustomLogger():
+    """
+    Singleton instance for logging, use `CustomLogger().main_logger` to get the instance.
+    """
     _instance = None
     main_logger = None
     loggerid = None

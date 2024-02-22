@@ -1,31 +1,35 @@
+from urllib.parse import urlparse
+import ssl
+import socket
 import tldextract
 
-# Function to append found (registered) domains from SAN list
-# Replaces this:
-# for domain1 in domain_list_with_san:
-#         domain_list_tld_extract.append(str(tldextract.extract(str(domain1)).registered_domain))
+def get_hostname(url):
+    return urlparse(url).netloc
 
-def append_domains_san_to_tld_extract(src):
-    dest = []
-    if not any(isinstance(x, list) for x in src):
-        # process list
-        for domain in src:
-            # print(domain)
-            dest.append(str(tldextract.extract(str(domain)).registered_domain))
-            # remove duplicates
-            dest = list(dict.fromkeys(dest))
-        return dest
-    # contains sublists; print or process items one by one
-    for x in src:
-        if isinstance(x, list):
-		    # process sub-list
-            dest.extend(append_domains_san_to_tld_extract(x))
-        else:
-            # print(x)
-            dest.append(str(tldextract.extract(str(x)).registered_domain))
-    # remove duplicates
-    dest = list(dict.fromkeys(dest))
-    return dest
+def get_san_names(domain):
+    context = ssl.create_default_context()
+    with socket.create_connection((domain, 443), timeout=2) as sock:
+        with context.wrap_socket(sock, server_hostname=domain) as ssock:
+            cert = ssock.getpeercert()
+            san = {}
+            for type_, san in cert['subjectAltName']:
+                if type_ in san:
+                    san[type_] = []
+                san[type_].append(san)
+            
+            return san['DNS']
+
+def get_registered_domain(hostname):
+    """
+    Gets the registered domain name of a given hostname, e.g. 'forums.bbc.co.uk' becomes 'bbc.co.uk'.
+    """
+    return tldextract.extract(hostname).registered_domain
+
+def get_unique_registered_domains(hostnames):
+    """
+    Extract registered domain names from a list of hostnames.
+    """
+    return list(set([get_registered_domain(hostname) for hostname in hostnames]))
 
 
 # Example source list of SAN domains:

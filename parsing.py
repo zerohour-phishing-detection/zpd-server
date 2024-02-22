@@ -13,27 +13,23 @@ class Parsing():
 
     # "files/" + sha1hash(URL)
     store = None
-    json = None
     clientscreen = None
 
-    def __init__(self, clientscreen, json, store):
-        self.json = json
+    def __init__(self, save_screenshots, title, imagedata, target_URL, store):
         self.store = store
-        self.clientscreen = clientscreen
+        self.clientscreen = save_screenshots
 
-        title = json['pagetitle']
         if not os.path.exists(store):
             os.makedirs(store)
 
-        if clientscreen:
+        if save_screenshots:
             st = len("data:image/png;base64,")
-            image = bytes(json['image64'], 'ascii')
+            image = bytes(imagedata, 'ascii')
             image = image[st:]
 
             self.create_png(store, image)
         else:
             #get screenshot ourselves with fixed size
-            target_URL = json['URL']
             options = Options()
             options.add_argument( "--headless" )
 
