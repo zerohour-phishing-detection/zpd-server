@@ -129,6 +129,12 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 if self.verify_url(l):
                     full_linkset.append(l)
         
+        matches = self.search_html.find('.Vd9M6 a')
+        for match in matches:
+            for l in match.absolute_links:
+                if self.verify_url(l):
+                    full_linkset.append(l)
+
         matches = self.search_html.find('.egMi0.kCrYT')
         for match in matches:
             for l in match.absolute_links:
@@ -137,8 +143,8 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 if 'url' not in qs:
                     continue
                 new_link = qs['url'][0]
-                if self.verify_url(new_link):
-                    full_linkset.append(new_link)
+                # if self.verify_url(new_link):
+                #     full_linkset.append(new_link)
 
         return full_linkset
 
@@ -170,6 +176,8 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                     r.html.render(timeout=3.0)
                     self.main_logger.info(f"Search URL is {r.url}")
                     self.search_html = r.html
+                    # with open('files/revimgsrch.html', 'w') as f:
+                    #     f.write(r.html.html)
                     r.close()
                     
                     self.main_logger.info(f"Status code: {r.status_code}")
@@ -212,7 +220,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         
         self.session = htmlsession
         
-        url = self.get_upload_link()
+        url = 'https://lens.google.com/v3/upload'
         self.main_logger.info(f"URL: {url}")
         self.post_html(url=url, region=region)
         
