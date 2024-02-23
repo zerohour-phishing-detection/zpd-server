@@ -132,12 +132,13 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         matches = self.search_html.find('.egMi0.kCrYT')
         for match in matches:
             for l in match.absolute_links:
-                if self.verify_url(l):
-                    url = urlparse(l)
-                    qs = parse_qs(url.query)
-                    if 'url' in qs:
-                        print(qs['url'])
-                        full_linkset.append(qs['url'])
+                url = urlparse(l)
+                qs = parse_qs(url.query)
+                if 'url' not in qs:
+                    continue
+                new_link = qs['url'][0]
+                if self.verify_url(new_link):
+                    full_linkset.append(new_link)
 
         return full_linkset
 
