@@ -245,7 +245,7 @@ def check_search_results(uuid, url, url_hash, url_registered_domain, found_urls)
             
             for hostname in san_names:
                 registered_domain = domains.get_registered_domain(hostname)
-                domain_list_tld_extract.append(registered_domain)
+                domain_list_tld_extract.add(registered_domain)
 
     main_logger.info(f"SAN check for {url_hash} for {len(found_urls)} domains")
     
