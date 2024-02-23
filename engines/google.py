@@ -1,9 +1,6 @@
-import requests
-import re
 import time
-import signal
 
-from urllib.parse import urlparse, quote_plus
+from urllib.parse import urlparse, parse_qs
 from ratelimit import limits, sleep_and_retry
 
 from requests_html import HTMLSession
@@ -16,22 +13,19 @@ from skimage.io import imread
 
 import utils.utils as ut
 
-__all__ = ['GoogleReverseImageSearchEngine']
-
-
 class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     """A :class:`ReverseImageSearchEngine` configured for google.com
     """
     search_start = 0
     next_url = None
-    session = None
+    session: HTMLSession = None
     # default 1
     retries = 1
     block_cnt = 0
     block_time = 0
     block_max = 5
     block_timeout = 3600
-    # defualt render timeout for r.html.render(timeout=3.0) = 3 sec
+    # default render timeout for r.html.render(timeout=3.0) = 3 sec
 
     def __init__(self):
         super(GoogleReverseImageSearchEngine, self).__init__(
@@ -64,10 +58,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 time.sleep(self.block_timeout/100)
         return False
 
-    def alarmhandler(self, signum, frame):
-        self.main_logger.error(f"Response took longer then allowed. Cancelling")
-        raise IOError("Did not receive response.")
-
     @sleep_and_retry
     @limits(calls=1, period=15)
     def get_html(self, url=None) -> str:
@@ -76,25 +66,25 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         self.main_logger.info(f"Sending request to: {url}")
 
-        #signal.signal(signal.SIGALRM, self.alarmhandler)
         self.search_html = None
         for i in range(self.retries):
             if not self.search_html:
                 try:
-                        self.main_logger.info(f"Sending get request, attempt: {i}")
-                        #signal.alarm(120)
-                        # self.main_logger.info(f"session: {self.session}")
-                        r = self.session.get(url)
-                        r.html.render(timeout=3.0)
-                        self.search_html = r.html
-                        #signal.alarm(0)
-                        r.close()
-                        self.main_logger.info(f"Status code: {r.status_code}")
+                    self.main_logger.info(f"Sending get request, attempt: {i}")
+                    
+                    r = self.session.get(url)
+                    r.html.render(timeout=3.0)
+                    
+                    self.search_html = r.html
+                    
+                    r.close()
+                    
+                    self.main_logger.info(f"Status code: {r.status_code} from URL {r.url}")
                 except Exception as err:
-                        self.main_logger.warning(f"{err}")
-                        pass
-                else:
-                    break
+                    self.main_logger.warning(f"{err}")
+                    pass
+            else:
+                break
 
         if not self.search_html:
             self.main_logger.error(f"max tries exceeded and no html response for: {url}")
@@ -105,7 +95,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         return self.search_html
 
-    def verify_url(self, urlstr:str) -> bool:
+    def verify_url(self, urlstr: str) -> bool:
         url = urlparse(urlstr)
         if url.netloc.startswith('webcache.googleusercontent.'):
             return False
@@ -138,6 +128,17 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             for l in match.absolute_links:
                 if self.verify_url(l):
                     full_linkset.append(l)
+        
+        matches = self.search_html.find('.egMi0.kCrYT')
+        for match in matches:
+            for l in match.absolute_links:
+                if self.verify_url(l):
+                    url = urlparse(l)
+                    qs = parse_qs(url.query)
+                    if 'url' in qs:
+                        print(qs['url'])
+                        full_linkset.append(qs['url'])
+
         return full_linkset
 
     @sleep_and_retry
@@ -158,25 +159,24 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             else:
                 raise NotImplementedError
 
-        #signal.signal(signal.SIGALRM, self.alarmhandler)
         self.search_html = None
         for i in range(self.retries):
             if not self.search_html:
                 try:
-                        self.main_logger.info(f"Sending post request, attempt: {i}")
-                        #signal.alarm(120)
-                        r = self.session.post(url, files=multipart)
-                        r.html.render(timeout=3.0)
-                        self.main_logger.info(f"Search URL is {r.url}")
-                        self.search_html = r.html
-                        r.close()
-                        #signal.alarm(0)
-                        self.main_logger.info(f"Status code: {r.status_code}")
+                    self.main_logger.info(f"Sending post request (to {url}, multipart keys {multipart.keys() if multipart != None else None}), attempt: {i}")
+                    
+                    r = self.session.post(url, files=multipart)
+                    r.html.render(timeout=3.0)
+                    self.main_logger.info(f"Search URL is {r.url}")
+                    self.search_html = r.html
+                    r.close()
+                    
+                    self.main_logger.info(f"Status code: {r.status_code}")
                 except Exception as err:
                     self.main_logger.warning(f"{err}")
                     pass
             else:
-                    break
+                break
         self.current = None
         self.block_check()
 
@@ -184,39 +184,22 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
     def result_count(self, default=10) -> int:
         return default
-        '''
-        if not self.search_html:
-            raise ValueError("HTML must be retrieved before result count can be parsed")
-        soup = BeautifulSoup(self.search_html.html, 'html.parser')
-        res = soup.find('div', id='result-stats')
-        try:
-            if not res:
-                self.main_logger.info(f"Could not find total result count supplied by {self.name}")
-                return default
-            self.main_logger.info(f"{res.text}")
-            res_cnt = re.search(r'([0-9.,]*)', res.text)
-            if not res_cnt:
-                self.main_logger.info(f"Could not find total result count supplied by {self.name}")
-                return default
-            else:
-                return int(re.sub(".|,","",res_cnt.group(0)))
-        except Exception as err:
-            self.main_logger.error(f"{err} [{res_cnt.group(0)}]")
-            return default
-        '''
 
     @sleep_and_retry
     @limits(calls=1, period=15)
     def get_next_results(self):
         if not self.search_html:
             raise ValueError("HTML must be retrieved before result count can be parsed")
+        
         soup = BeautifulSoup(self.search_html.html, 'html.parser')
         res = soup.find('div', id='pnnext')
-        #Catch not finding the next button
+        
+        # Catch not finding the next button
         if not res:
             res = soup.find('a', id='pnnext')
             if not res:
                 return False
+        
         next_link = self.url_base + res['href']
         self.get_html(next_link)
         return True
@@ -225,11 +208,16 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     @limits(calls=1, period=15)
     def get_n_image_matches(self, htmlsession, region, n:int) -> list:
         self.main_logger.info(f"Starting browser session")
+        
         self.session = htmlsession
-        self.post_html(url=self.get_upload_link(), region=region)
+        
+        url = self.get_upload_link()
+        self.main_logger.info(f"URL: {url}")
+        self.post_html(url=url, region=region)
+        
         r = self._handle_search(n)
+        
         self.main_logger.info(f"Ending browser session")
-        #self.session.close()
         return r
 
     @sleep_and_retry
@@ -237,16 +225,19 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     def get_n_image_matches_clearbit(self, htmlsession, tld, n:int) -> list:
         self.main_logger.info(f"Starting browser session")
         self.session = htmlsession
-        # get clearbit logo as png as numpy ndarray
+        # Get clearbit logo as png as numpy ndarray
         try:
             region = imread(f"https://logo.clearbit.com/{tld}")
             self.main_logger.info(f"https://logo.clearbit.com/{tld}")
-            # region is RGB, but rest is BGR, so convert
+            # Region is RGB, but rest is BGR, so convert
             region = region[:,:,::-1]
+            
             self.post_html(url=self.get_upload_link(), region=region)
+            
             r = self._handle_search(n)
+            
             self.main_logger.info(f"Ending browser session")
-            #self.session.close()
+
             return r
         except:
             return None
@@ -255,12 +246,13 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     @limits(calls=1, period=15)
     def get_n_text_matches(self, htmlsession, text:str, n:int) -> list:
         self.main_logger.info(f"Starting browser session")
+        
         self.session = htmlsession
-        #self.main_logger.info(f"Started session: {self.session}")
         self.get_html(url=self.get_search_link_by_terms(text))
         r = self._handle_search(n)
+        
         self.main_logger.info(f"Ending browser session")
-        #self.session.close()
+        
         return r
 
     @sleep_and_retry
@@ -268,7 +260,9 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     def _handle_search(self, n):
         results  = self.find_matches()
         cnt = self.result_count(default=10)
+        
         self.main_logger.info(f"Found {len(results)} initial results.")
+
         while len(results) < min(n, cnt):
             self.main_logger.info(f"Extending results due to {len(results)} < {min(n, cnt)}")
             inc = []
@@ -277,15 +271,19 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             else:
                 self.main_logger.info(f"Extending results failed due to no next button.")
                 break
+            
             # Failsafe incase we somehow cant find more results
             if len(inc) == 0:
                 self.main_logger.warning(f"Extending results failed due to no increment.")
                 break
+            
             self.main_logger.info(f"Found {len(inc)} additional results, totaling to: {len(results) + len(inc)}")
             results += inc
         if len(results) > n:
             results = results[0:n]
+        
         self.main_logger.info(f"{self.name} - Found: {len(results)} links.")
         for res in results:
             self.main_logger.info(f"{res}")
+        
         return results
