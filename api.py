@@ -79,4 +79,5 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Start Flask app, bind to all interfaces
-app.run(host="0.0.0.0")
+# app.run(host="0.0.0.0")
+print(detection.test('https://www.paypal.com/signin', 'https://www.paypal.com/signin', 'd19a51e9-f4dc-425e-b666-e2429403613e', 'Log in to your PayPal account', None))
