@@ -1,19 +1,15 @@
-import requests
-from bs4 import BeautifulSoup, SoupStrainer
-from urllib.parse import urlparse, quote_plus
-from . import ReverseImageSearchEngine
-import utils.utils as ut
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 import time
 from ratelimit import limits, sleep_and_retry
-from utils.proxygetter import ProxyGetter
-from requests_html import HTMLSession
 import numpy
 import cv2
-import utils.utils as ut
 import os
 import base64
 
-__all__ = ['BingReverseImageSearchEngine']
+from . import ReverseImageSearchEngine
+import utils.utils as ut
+
 
 class BingReverseImageSearchEngine(ReverseImageSearchEngine):
 

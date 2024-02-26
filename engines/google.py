@@ -5,13 +5,13 @@ from ratelimit import limits, sleep_and_retry
 
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup
-from . import ReverseImageSearchEngine
 
 import cv2
 import numpy
 from skimage.io import imread
 
 import utils.utils as ut
+from . import ReverseImageSearchEngine
 
 class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     """A :class:`ReverseImageSearchEngine` configured for google.com

@@ -1,8 +1,5 @@
-from bs4 import BeautifulSoup
-
 from . import ReverseImageSearchEngine
 
-__all__ = ['TinEyeReverseImageSearchEngine']
 
 class TinEyeReverseImageSearchEngine(ReverseImageSearchEngine):
 
