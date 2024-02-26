@@ -1,4 +1,5 @@
 import time
+import random
 
 from urllib.parse import urlparse, parse_qs
 from ratelimit import limits, sleep_and_retry
@@ -160,7 +161,10 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         if not (region is None):
             if type(region) is numpy.ndarray:
-                multipart = {'encoded_image': ('temp.png', cv2.imencode('.png', region)[1])}
+                png_img = cv2.imencode('.png', region)[1]
+                multipart = {'encoded_image': ('temp.png', png_img)}
+                with open(f'files/temp-{random.randint(0, 999999)}.png', 'wb') as f:
+                    f.write(numpy.array(png_img).tobytes())
             elif os.path.exists(image):
                 multipart = {'encoded_image': (region, open(region, 'rb'))}
             else:
