@@ -5,7 +5,7 @@ We follow NumPy's docstring conventions, which can be found [here](https://numpy
 
 Here is an example of a function documented in such manner:
 ```py
-def doStuff(a, b, c : int = 0) -> tuple[int, str]:
+def do_stuff(a, b, c : int = 0) -> tuple[int, str]:
     """
     This function does some stuff.
 
