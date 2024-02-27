@@ -18,7 +18,7 @@ def doStuff(a, b, c : int = 0) -> tuple[int, str]:
         Description of parameter `a`.
     b
         Description of parameter `b` (with type not specified).
-    c : int, default: 0
+    c : int, default 0
 
     Returns
     -------
