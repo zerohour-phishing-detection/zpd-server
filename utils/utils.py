@@ -85,13 +85,13 @@ def fix_entries(search, def_db):
     results = search.conn_storage.execute(sql).fetchall()
     issue2 = set()
     start2 = time.time()
-    
+
     for row in results:
         issue2.add(row[0])
-    
+
     main_logger.error(f"Stage Text: {len(issue2)} missing entries found.")
     cnt = 0
-    
+
     for row in issue2:
         cnt += 1
         setstatus(
