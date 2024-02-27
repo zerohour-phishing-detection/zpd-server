@@ -25,9 +25,6 @@ class ReverseImageSearchEngine:
         self.name = name
         self.main_logger = CustomLogger().main_logger
 
-    def identifiers(self):
-        return {self.name.lower(), self.name[0:1].lower()}
-
     def get_search_link_by_url(self, url) -> str:
         self.search_url = url
         self.search_html = ''

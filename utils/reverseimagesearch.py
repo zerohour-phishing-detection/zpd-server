@@ -6,9 +6,7 @@ import numpy as np
 from utils.customlogger import CustomLogger
 import utils.utils as ut
 import utils.region_detection as region_detection
-from utils.region_detection import RegionData    
-
-import searchengine
+from utils.region_detection import RegionData
 
 class ReverseImageSearch():
     search_engines = None
@@ -27,13 +25,13 @@ class ReverseImageSearch():
 
     _main_logger = CustomLogger().main_logger
 
-    def __init__(self, storage=None, search_engine=None, folder=None, upload=True, mode=None, htmlsession=None, clf=None, clearbit=False, tld=None):
+    def __init__(self, storage=None, search_engines=None, folder=None, upload=True, mode=None, htmlsession=None, clf=None, clearbit=False, tld=None):
         # To avoid ints becoming blobs upon storing:
         sqlite3.register_adapter(np.int64, lambda val: int(val))
         sqlite3.register_adapter(np.int32, lambda val: int(val))
 
         #self._main_logger.info(f"Starting with IP: {ut.get_ip()}")
-        self.search_engines = searchengine.SearchEngine().get_engine(search_engine)
+        self.search_engines = search_engines
         #self._main_logger.info(f"Using the following search engine(s): {', '.join([en.name for en in self.search_engines])}")
 
         self.conn_storage = sqlite3.connect(storage)

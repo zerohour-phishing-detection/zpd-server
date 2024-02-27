@@ -92,7 +92,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
     with TimeIt('text-only reverse page search'):
         # Initiate text-only reverse image search instance
         search = ReverseImageSearch(storage=DB_PATH_OUTPUT,
-                                    search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
+                                    search_engines=[GoogleReverseImageSearchEngine()],
                                     folder=SESSION_FILE_STORAGE_PATH,
                                     upload=False,
                                     mode="text",
@@ -115,7 +115,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
 
     with TimeIt('image-only reverse page search'):
         search = ReverseImageSearch(storage=DB_PATH_OUTPUT, 
-                                    search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0], 
+                                    search_engines=[GoogleReverseImageSearchEngine()], 
                                     folder=SESSION_FILE_STORAGE_PATH, 
                                     upload=True, mode="image", 
                                     htmlsession=html_session, 
