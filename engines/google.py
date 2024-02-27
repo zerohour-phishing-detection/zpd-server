@@ -96,18 +96,41 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         return self.search_html
 
-    def verify_url(self, urlstr: str) -> bool:
-        url = urlparse(urlstr)
-        if url.netloc.startswith('webcache.googleusercontent.'):
+    def check_internal_url(self, url : str) -> bool:
+        """
+        Check if a URL is a Google internal URL.
+        
+        Returns
+        -------
+        bool
+            `True` if the URL is usable for filtering, or `False` 
+            if it's from Google internally.
+        """
+        parsed_url = urlparse(url)
+        netloc = parsed_url.netloc
+        query = parsed_url.query
+        path = parsed_url.path
+
+        # TODO: this may filter out other websites too (e.g. webcache.googleusercontent.mycoolwebsite.com)
+        #         is that an issue?
+
+        # No googleusercontent
+        if netloc.startswith('webcache.googleusercontent.'):
             return False
-        elif url.netloc.startswith('www.google.') and url.query.startswith('q=related:'):
+
+        # Filter out the related searches suggestion
+        if netloc.startswith('www.google.') and query.startswith('q=related:'):
             return False
-        elif urlstr.startswith('https://www.google.com/imgres?'):
+
+        # No cached images
+        if netloc == 'www.google.com' and path == 'imgres':
             return False
-        elif url.netloc.startswith('translate.google.'):
+
+        # No Google Translate
+        if netloc.startswith('translate.google.'):
             return False
-        else:
-            return True
+
+        return True
 
     def find_matches(self) -> list[str]:
         """
@@ -133,14 +156,14 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         matches = self.search_html.find('.g .yuRUbf a')
         for match in matches:
             for link in match.absolute_links:
-                if self.verify_url(link):
+                if self.check_internal_url(link):
                     found_urls.append(link)
 
         # Old match
         matches = self.search_html.find('.g .rc a')
         for match in matches:
             for link in match.absolute_links:
-                if self.verify_url(link):
+                if self.check_internal_url(link):
                     found_urls.append(link)
         
         # New reverse image search (if it works)
@@ -148,7 +171,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         for match in matches:
             for link in match.absolute_links:
                 # Verify URL and add it
-                if self.verify_url(link):
+                if self.check_internal_url(link):
                     found_urls.append(link)
 
         # New text search
@@ -163,7 +186,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 new_link = qs['url'][0]
                 
                 # Verify URL and add it
-                if self.verify_url(new_link):
+                if self.check_internal_url(new_link):
                     found_urls.append(new_link)
 
         return found_urls
