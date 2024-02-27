@@ -109,45 +109,64 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         else:
             return True
 
-    def find_matches(self) -> list:
-        if not self.search_html:
-            # self.main_logger.warning(f"DEBUG: {self.search_html}")
-            if not self.search_url:
-                raise ValueError('No html given yet!')
-            if not self.get_html(self.search_url):
-                raise ValueError('No html retrieved')
+    def find_matches(self) -> list[str]:
+        """
+        Tries to find URLs in the search results.
 
-        full_linkset = []
+        Looks through `self.search_html` for search result URLs, 
+        possibly first fetching the search results using `self.search_url`.
+
+        Returns
+        -------
+        list[str]
+            The URLs that were found.
+        """
+        if not self.search_html:
+            # No search HTML present yet, try fetching it
+            if not self.search_url:
+                raise ValueError('No HTML or URL given')
+            if not self.get_html(self.search_url):
+                raise ValueError('No HTML was retrieved from URL')
+
+        found_urls = []
+        # Old match
         matches = self.search_html.find('.g .yuRUbf a')
         for match in matches:
-            for l in match.absolute_links:
-                if self.verify_url(l):
-                    full_linkset.append(l)
+            for link in match.absolute_links:
+                if self.verify_url(link):
+                    found_urls.append(link)
 
+        # Old match
         matches = self.search_html.find('.g .rc a')
         for match in matches:
-            for l in match.absolute_links:
-                if self.verify_url(l):
-                    full_linkset.append(l)
+            for link in match.absolute_links:
+                if self.verify_url(link):
+                    found_urls.append(link)
         
+        # New reverse image search (if it works)
         matches = self.search_html.find('.Vd9M6 a')
         for match in matches:
-            for l in match.absolute_links:
-                if self.verify_url(l):
-                    full_linkset.append(l)
+            for link in match.absolute_links:
+                # Verify URL and add it
+                if self.verify_url(link):
+                    found_urls.append(link)
 
+        # New text search
         matches = self.search_html.find('.egMi0.kCrYT')
         for match in matches:
-            for l in match.absolute_links:
-                url = urlparse(l)
+            for link in match.absolute_links:
+                # Google has these redirect links, extract the direct link from it in the query parameters
+                url = urlparse(link)
                 qs = parse_qs(url.query)
                 if 'url' not in qs:
                     continue
                 new_link = qs['url'][0]
-                # if self.verify_url(new_link):
-                #     full_linkset.append(new_link)
+                
+                # Verify URL and add it
+                if self.verify_url(new_link):
+                    found_urls.append(new_link)
 
-        return full_linkset
+        return found_urls
 
     @sleep_and_retry
     @limits(calls=1, period=15)
