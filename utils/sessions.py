@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+
 import tldextract
 
 
@@ -10,6 +11,7 @@ class SessionStorage:
 
     Note that, currently, once a session has completed, it will not be deleted from the database.
     """
+
     shared = False
     storage = None
 
@@ -17,7 +19,7 @@ class SessionStorage:
         self.shared = shared
         self.storage = db_file_path
 
-        storage_conn = sqlite3.connect(db_file_path)        
+        storage_conn = sqlite3.connect(db_file_path)
         self._setup_storage(storage_conn)
 
         # Delete unfinished tasks on start-up
@@ -30,17 +32,21 @@ class SessionStorage:
         Stores the given state (uuid, url, result, state) in the database.
         """
         storage_conn = sqlite3.connect(self.storage)
-        
+
         now = datetime.now()
-        if self._get_state(uuid, url) == None:
+        if self._get_state(uuid, url) is None:
             domain = tldextract.extract(url).registered_domain
-            
-            storage_conn.execute("INSERT INTO session (uuid, timestamp, url, tld, result, state) VALUES (?, ?, ?, ?, ?, ?)", 
-                                 [uuid, now, url, domain, result, state])
+
+            storage_conn.execute(
+                "INSERT INTO session (uuid, timestamp, url, tld, result, state) VALUES (?, ?, ?, ?, ?, ?)",
+                [uuid, now, url, domain, result, state],
+            )
         else:
-            storage_conn.execute("UPDATE session SET result = ?, timestamp = ?, state = ? WHERE uuid = ? AND url = ?", 
-                                 [result, now, state, uuid, url])
-        
+            storage_conn.execute(
+                "UPDATE session SET result = ?, timestamp = ?, state = ? WHERE uuid = ? AND url = ?",
+                [result, now, state, uuid, url],
+            )
+
         storage_conn.commit()
         storage_conn.close()
 
@@ -49,22 +55,27 @@ class SessionStorage:
         Retrieves the current State from the database, or None in case it is not present.
         """
         storage_conn = sqlite3.connect(self.storage)
-        
+
         if self.shared:
-            cursor = storage_conn.execute("SELECT result, state, timestamp FROM session WHERE url = ?", [url])
+            cursor = storage_conn.execute(
+                "SELECT result, state, timestamp FROM session WHERE url = ?", [url]
+            )
         else:
-            cursor = storage_conn.execute("SELECT result, state, timestamp FROM session WHERE uuid = ? AND url = ?", [uuid, url])
-        
+            cursor = storage_conn.execute(
+                "SELECT result, state, timestamp FROM session WHERE uuid = ? AND url = ?",
+                [uuid, url],
+            )
+
         query_res = cursor.fetchone()
         storage_conn.close()
 
-        if query_res == None:
+        if query_res is None:
             return None
 
         return State(result=query_res[0], state=query_res[1], timestamp=query_res[2])
 
     def _setup_storage(self, storage_conn):
-        sql_q_db = '''
+        sql_q_db = """
             CREATE TABLE IF NOT EXISTS "session" (
                 "uuid"	string,
                 "timestamp" string,
@@ -72,13 +83,14 @@ class SessionStorage:
                 "tld"	string,
                 "result" string,
                 "state" string
-            );'''
+            );"""
         storage_conn.execute(sql_q_db)
         storage_conn.commit()
-    
-    def get_session(self, uuid, url) -> 'Session':
+
+    def get_session(self, uuid, url) -> "Session":
         # TODO persist session objects up to a limit for performance improvements, in combination with state cache
         return Session(self, uuid, url)
+
 
 class State:
     result: str
@@ -90,10 +102,12 @@ class State:
         self.state = state
         self.timestamp = timestamp
 
+
 class Session:
     """
-    Represents a single session, i.e. 
+    Represents a single session, i.e.
     """
+
     storage: SessionStorage
     uuid: str
     url: str
@@ -102,7 +116,7 @@ class Session:
         self.storage = storage
         self.uuid = uuid
         self.url = url
-    
+
     # TODO make 'result' some sort of enum (phishing, not phishing, inconclusive, processing)
     # also better names for the result,state
     def set_state(self, result, state):
@@ -110,7 +124,7 @@ class Session:
         Sets the state of this session to the given result and state.
         """
         return self.storage._store_state(self.uuid, self.url, result, state)
-    
+
     def get_state(self):
         """
         Retrieves the current State of this session.
