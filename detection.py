@@ -149,9 +149,6 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
         driver.set_page_load_timeout(WEB_DRIVER_PAGE_LOAD_TIMEOUT)
 
         for index, resulturl in enumerate(url_list_text + url_list_img):
-            if not isinstance(resulturl, str):
-                continue
-
             if check_image(driver, out_dir, index, session_file_path, resulturl):
                 driver.quit()
 
