@@ -1,15 +1,11 @@
 '''
-    Just some misc util funcs that might be universally used
+    Just some misc util functions that might be universally used
 '''
 
 import time
 import requests
-import sys
 import os
-import stat
 from bs4 import BeautifulSoup
-from datetime import datetime
-import sqlite3
 
 # Setup logging
 from utils.custom_logger import CustomLogger
@@ -18,9 +14,6 @@ main_logger = CustomLogger().main_logger
 def toFile(filename: str, string: str):
     with open(filename, "w") as f:
         f.write(string)
-
-def store_handles(hash, regid):
-    toFile(f"response/{hash} - {regid} - {time.time()}.log", fd_table_status_str())
 
 def timeFormat(inp):
     m, s = divmod(inp, 60)
