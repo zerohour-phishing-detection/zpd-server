@@ -27,11 +27,6 @@ app.config["DEBUG"] = False
 def home():
     return render_template('index.html')
 
-@app.route('/stop')
-def shutdown():
-    shutdown_server()
-    return 'Server shutting down...'
-
 def shutdown_server():
     os._exit(0)
 
