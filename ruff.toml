@@ -2,6 +2,9 @@ preview = true
 
 extend-exclude = []
 
+line-length = 100
+indent-width = 4
+
 # Assume Python 3.11
 target-version = "py311"
 
@@ -12,11 +15,13 @@ target-version = "py311"
 # F - (https://docs.astral.sh/ruff/rules/#pyflakes-f)
 # C901 - complex-structure (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
 # N - naming convention (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
-# COM - commas (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
+# COM - commas (https://docs.astral.sh/ruff/rules/#flake8-commas-com)
 # I - isort (https://docs.astral.sh/ruff/rules/#isort-i)
 # We could also add the following rules:
 # "ANN0" - missing-type-function-argument (https://docs.astral.sh/ruff/rules/#flake8-annotations-ann)
 # "ANN201" - missing-return-type-undocumented-public-function (https://docs.astral.sh/ruff/rules/#flake8-annotations-ann)
-select = ["E1", "E22", "E252", "E4", "E7", "E9", "F", "W291", "C901", "N", "COM", "I"]
+# Sometimes useful:
+# ERA - commented-out-code (https://docs.astral.sh/ruff/rules/#eradicate-era)
 
-ignore = ["D100"]
+select = ["E1", "E22", "E252", "E4", "E7", "E9", "F", "W291", "C901", "N", "COM818", "COM819", "I"]
+ignore = []
