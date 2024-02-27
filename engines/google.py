@@ -57,7 +57,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
             if self.block_cnt >= self.block_max:
                 self.main_logger.error(f"Blocked too many times by {self.name}. Pausing for {self.block_timeout} seconds.")
-                ut.toFile("status.txt", f"Blocked - Paused")
+                ut.to_file("status.txt", f"Blocked - Paused")
                 time.sleep(self.block_timeout)
             else:
                 self.main_logger.error(f"Blocked by {self.name} ({self.block_cnt}/{self.block_max} of long timeout). Pausing for {self.block_timeout/100} seconds.")

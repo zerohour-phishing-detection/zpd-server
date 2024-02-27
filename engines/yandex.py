@@ -154,7 +154,7 @@ class YandexReverseImageSearchEngine(ReverseImageSearchEngine):
         self.session = HTMLSession()
 
         self.get_html(url=self.get_search_link_by_terms(text))
-        ut.toFile("resp.html", self.search_html.html)
+        ut.to_file("resp.html", self.search_html.html)
         soup = BeautifulSoup(self.search_html.html, 'html.parser')
         full_linkset = []
         for link in soup.find_all('a', {'class' : 'organic__url'}):
