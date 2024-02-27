@@ -100,7 +100,8 @@ def structural_sim(path_a, path_b):
     """
     img_a = get_img(path_a)
     img_b = get_img(path_b)
-    sim, diff = compare_ssim(img_a, img_b, full=True) # TODO: check if this is useful and why it has an error
+    # TODO: check if this is useful and why it has an error
+    sim, _ = compare_ssim(img_a, img_b, full=True)
     return sim
 
 
