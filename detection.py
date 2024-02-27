@@ -124,15 +124,16 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
                                     tld=url_registered_domain)
         search.handle_folder(session_file_path, url_hash)
 
+        # Get results from above search
         url_list_img = db_conn_output.execute("SELECT DISTINCT result FROM search_result_image WHERE filepath = ?", [url_hash]).fetchall()
         url_list_img = [url[0] for url in url_list_img]
 
+        # Handle results
         res = check_search_results(uuid, url, url_hash, url_registered_domain, url_list_img)
         if res != None:
             return res
 
     # No match through images, go on to image comparison per URL
-
     with TimeIt('image comparisons'):
         session.set_state('processing', 'imagecompare')
 
@@ -148,8 +149,10 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
         driver.set_window_size(screenshot_width, screenshot_height)
         driver.set_page_load_timeout(WEB_DRIVER_PAGE_LOAD_TIMEOUT)
 
+        # Check all found URLs
         for index, resulturl in enumerate(url_list_text + url_list_img):
             if check_image(driver, out_dir, index, session_file_path, resulturl):
+                # Match for found images, so conclude as phishing
                 driver.quit()
 
                 main_logger.info(f'[RESULT] Phishing, for url {url}, due to image comparisons')
@@ -157,9 +160,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
                 session.set_state('phishing', '')
 
                 return DetectionResult(url, url_hash, 'phishing')
-            # Otherwise go to next
 
-    driver.quit()
+        driver.quit()
 
     # If the inconclusive stems from google blocking:
     #   e.g. blocked == True
