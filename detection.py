@@ -106,9 +106,11 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
         url_list_text = [url[0] for url in url_list_text]
 
         # Handle results of search from above
-        res = check_search_results(uuid, url, url_hash, url_registered_domain, url_list_text)
-        if res != None:
-            return res
+        if check_search_results(url_registered_domain, url_list_text):
+            main_logger.info(f'[RESULT] Not phishing, for url {url}, due to registered domain validation')
+            session.set_state('not phishing', '')
+            
+            return DetectionResult(url, url_hash, 'not phishing')
 
     # No match through text, move on to image search
     session.set_state('processing', 'imagesearch')
@@ -124,15 +126,18 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
                                     tld=url_registered_domain)
         search.handle_folder(session_file_path, url_hash)
 
+        # Get results from above search
         url_list_img = db_conn_output.execute("SELECT DISTINCT result FROM search_result_image WHERE filepath = ?", [url_hash]).fetchall()
         url_list_img = [url[0] for url in url_list_img]
 
-        res = check_search_results(uuid, url, url_hash, url_registered_domain, url_list_img)
-        if res != None:
-            return res
+        # Handle results
+        if check_search_results(url_registered_domain, url_list_img):
+            main_logger.info(f'[RESULT] Not phishing, for url {url}, due to registered domain validation')
+            session.set_state('not phishing', '')
+            
+            return DetectionResult(url, url_hash, 'not phishing')
 
     # No match through images, go on to image comparison per URL
-
     with TimeIt('image comparisons'):
         session.set_state('processing', 'imagecompare')
 
@@ -148,11 +153,10 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
         driver.set_window_size(screenshot_width, screenshot_height)
         driver.set_page_load_timeout(WEB_DRIVER_PAGE_LOAD_TIMEOUT)
 
+        # Check all found URLs
         for index, resulturl in enumerate(url_list_text + url_list_img):
-            if not isinstance(resulturl, str):
-                continue
-
             if check_image(driver, out_dir, index, session_file_path, resulturl):
+                # Match for found images, so conclude as phishing
                 driver.quit()
 
                 main_logger.info(f'[RESULT] Phishing, for url {url}, due to image comparisons')
@@ -160,9 +164,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
                 session.set_state('phishing', '')
 
                 return DetectionResult(url, url_hash, 'phishing')
-            # Otherwise go to next
 
-    driver.quit()
+        driver.quit()
 
     # If the inconclusive stems from google blocking:
     #   e.g. blocked == True
@@ -174,19 +177,6 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
     return DetectionResult(url, url_hash, 'inconclusive')
 
 def check_image(driver, out_dir, index, session_file_path, resulturl):
-    urllower = resulturl.lower()
-
-    # TODO whyyyyyyy
-    if (("www.mijnwoordenboek.nl/puzzelwoordenboek/Dot/1" in resulturl) or 
-            ("amsterdamvertical" in resulturl) or ("dotgroningen" in urllower) or 
-            ("britannica" in resulturl) or 
-            ("en.wikipedia.org/wiki/Language" in resulturl) or 
-            (resulturl == '') or 
-            (("horizontal" in urllower) and 
-                not ("horizontal" in domains.get_registered_domain(resulturl)) 
-                or (("vertical" in urllower) and not ("horizontal" in domains.get_registered_domain(resulturl))))):
-        return False
-    
     # Take screenshot of URL and save it
     try:
         driver.get(resulturl)
@@ -229,34 +219,29 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     
     return False
 
-def check_search_results(uuid, url, url_hash, url_registered_domain, found_urls) -> 'DetectionResult':
+def check_search_results(url_registered_domain, found_urls) -> 'DetectionResult':
     with TimeIt('SAN domain check'):
-        session = session_storage.get_session(uuid, url)
-
-        domain_list_tld_extract = set()
-        # Get SAN names and append
-        for urls in found_urls:
-            domain = domains.get_hostname(urls)
-            try:
-                san_names = [domain] + domains.get_san_names(domain)
-            except:
-                main_logger.error(f'Error in SAN for {domain}')
-                continue
+        for url in found_urls:
+            # For each found URL, get the hostname
+            domain = domains.get_hostname(url)
             
-            for hostname in san_names:
+            # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
+            try:
+                san_names = domains.get_san_names(domain)
+            except:
+                main_logger.error(f'Error in SAN for {domain} (from URL {url})', exc_info=1)
+                continue
+
+            main_logger.debug(f'Domain of URL `{url}` is {domain}, with SAN names {san_names}')
+            
+            for hostname in [domain] + san_names:
+                # Check if any of the domains found matches the input domain
                 registered_domain = domains.get_registered_domain(hostname)
-                domain_list_tld_extract.append(registered_domain)
-
-    main_logger.info(f"SAN check for {url_hash} for {len(found_urls)} domains")
-    
-    if url_registered_domain in domain_list_tld_extract:
-        main_logger.info(f'[RESULT] Not phishing, for url {url}, due to registered domain validation')
-        session.set_state('not phishing', '')
+                if url_registered_domain == registered_domain:
+                    return True
         
-        return DetectionResult(url, url_hash, 'not phishing')
-
-    # No results yet
-    return None
+        # If no match, no results yet
+        return False
 
 # TODO overlaps with State in sessions.py, merge them or sth
 class DetectionResult:
