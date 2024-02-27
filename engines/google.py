@@ -52,7 +52,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
             if self.block_cnt >= self.block_max:
                 self.main_logger.error(f"Blocked too many times by {self.name}. Pausing for {self.block_timeout} seconds.")
-                ut.toFile("status.txt", f"Blocked - Paused")
+                ut.toFile("status.txt", "Blocked - Paused")
                 time.sleep(self.block_timeout)
             else:
                 self.main_logger.error(f"Blocked by {self.name} ({self.block_cnt}/{self.block_max} of long timeout). Pausing for {self.block_timeout/100} seconds.")
@@ -189,31 +189,29 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     @sleep_and_retry
     @limits(calls=1, period=15)
     def post_html(self, url=None, region=None):
-        if not url:
-            if not self.search_url:
+        if url is None:
+            if self.search_url is None:
                 raise ValueError('No url defined and no last_searched_url available!')
             url = self.search_url
 
-        multipart = None
+        multipart_data = None
 
-        if not (region is None):
+        if region is not None:
             if type(region) is numpy.ndarray:
                 png_img = cv2.imencode('.png', region)[1]
-                multipart = {'encoded_image': ('temp.png', png_img)}
+                multipart_data = {'encoded_image': ('temp.png', png_img)}
                 with open(f'files/temp-{random.randint(0, 999999)}.png', 'wb') as f:
                     f.write(numpy.array(png_img).tobytes())
-            elif os.path.exists(image):
-                multipart = {'encoded_image': (region, open(region, 'rb'))}
             else:
-                raise NotImplementedError
+                raise NotImplementedError()
 
         self.search_html = None
         for i in range(self.retries):
             if not self.search_html:
                 try:
-                    self.main_logger.info(f"Sending post request (to {url}, multipart keys {multipart.keys() if multipart != None else None}), attempt: {i}")
+                    self.main_logger.info(f"Sending post request (to {url}, multipart keys {multipart_data.keys() if multipart_data is not None else None}), attempt: {i}")
                     
-                    r = self.session.post(url, files=multipart)
+                    r = self.session.post(url, files=multipart_data)
                     r.html.render(timeout=3.0)
                     self.main_logger.info(f"Search URL is {r.url}")
                     self.search_html = r.html
@@ -257,7 +255,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     @sleep_and_retry
     @limits(calls=1, period=15)
     def get_n_image_matches(self, htmlsession, region, n:int) -> list:
-        self.main_logger.info(f"Starting browser session")
+        self.main_logger.info("Starting browser session")
         
         self.session = htmlsession
         
@@ -267,13 +265,13 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         
         r = self._handle_search(n)
         
-        self.main_logger.info(f"Ending browser session")
+        self.main_logger.info("Ending browser session")
         return r
 
     @sleep_and_retry
     @limits(calls=1, period=15)
     def get_n_image_matches_clearbit(self, htmlsession, tld, n:int) -> list:
-        self.main_logger.info(f"Starting browser session")
+        self.main_logger.info("Starting browser session")
         self.session = htmlsession
         # Get clearbit logo as png as numpy ndarray
         try:
@@ -286,22 +284,23 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             
             r = self._handle_search(n)
             
-            self.main_logger.info(f"Ending browser session")
+            self.main_logger.info("Ending browser session")
 
             return r
-        except:
+        except Exception:
+            self.main_logger.exception('Error during Clearbit logo lookup')
             return None
 
     @sleep_and_retry
     @limits(calls=1, period=15)
     def get_n_text_matches(self, htmlsession, text:str, n:int) -> list:
-        self.main_logger.info(f"Starting browser session")
+        self.main_logger.info("Starting browser session")
         
         self.session = htmlsession
         self.get_html(url=self.get_search_link_by_terms(text))
         r = self._handle_search(n)
         
-        self.main_logger.info(f"Ending browser session")
+        self.main_logger.info("Ending browser session")
         
         return r
 
@@ -319,12 +318,12 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             if self.get_next_results():
                 inc = self.find_search_result_urls()
             else:
-                self.main_logger.info(f"Extending results failed due to no next button.")
+                self.main_logger.info("Extending results failed due to no next button.")
                 break
             
             # Failsafe incase we somehow cant find more results
             if len(inc) == 0:
-                self.main_logger.warning(f"Extending results failed due to no increment.")
+                self.main_logger.warning("Extending results failed due to no increment.")
                 break
             
             self.main_logger.info(f"Found {len(inc)} additional results, totaling to: {len(results) + len(inc)}")
