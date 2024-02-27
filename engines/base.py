@@ -57,7 +57,9 @@ class ReverseImageSearchEngine:
         except:
             return False
 
-    def get_matches(self) -> list:
+    def find_search_result_urls(self) -> list:
+        """Searches for URLs in the search results.
+        """
         raise NotImplementedError
 
     def get_n_image_matches(self, region, n:int) -> list:

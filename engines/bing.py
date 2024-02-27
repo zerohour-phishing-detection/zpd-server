@@ -106,7 +106,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
         else:
             return True
 
-    def find_matches(self) -> list:
+    def find_search_result_urls(self) -> list:
         if not self.search_html:
             if not self.search_url:
                 raise ValueError('No html given yet!')
@@ -234,14 +234,14 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     @sleep_and_retry
     @limits(calls=1, period=15)
     def _handle_search(self, n):
-        results  = self.find_matches()
+        results  = self.find_search_result_urls()
         cnt = self.result_count(default=10)
         self.main_logger.info(f"Found {len(results)} initial results.")
         while len(results) < min(n, cnt):
             self.main_logger.info(f"Extending results due to {len(results)} < {min(n, cnt)}")
             inc = []
             if self.get_next_results():
-                inc = self.find_matches()
+                inc = self.find_search_result_urls()
             else:
                 self.main_logger.info(f"Extending results failed due to no next button.")
                 break

@@ -132,17 +132,12 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         return True
 
-    def find_matches(self) -> list[str]:
+    def find_search_result_urls(self) -> list[str]:
         """
-        Tries to find URLs in the search results.
+        Searches for URLs in the search results.
 
         Looks through `self.search_html` for search result URLs, 
         possibly first fetching the search results using `self.search_url`.
-
-        Returns
-        -------
-        list[str]
-            The URLs that were found.
         """
         if not self.search_html:
             # No search HTML present yet, try fetching it
@@ -313,7 +308,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     @sleep_and_retry
     @limits(calls=1, period=15)
     def _handle_search(self, n):
-        results  = self.find_matches()
+        results  = self.find_search_result_urls()
         cnt = self.result_count(default=10)
         
         self.main_logger.info(f"Found {len(results)} initial results.")
@@ -322,7 +317,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             self.main_logger.info(f"Extending results due to {len(results)} < {min(n, cnt)}")
             inc = []
             if self.get_next_results():
-                inc = self.find_matches()
+                inc = self.find_search_result_urls()
             else:
                 self.main_logger.info(f"Extending results failed due to no next button.")
                 break

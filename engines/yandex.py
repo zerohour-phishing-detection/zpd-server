@@ -68,7 +68,7 @@ class YandexReverseImageSearchEngine(ReverseImageSearchEngine):
         self.block_check()
         return self.search_html
 
-    def find_matches(self) -> list:
+    def find_search_result_urls(self) -> list:
         if not self.search_html:
             if not self.search_url:
                 raise ValueError('No html given yet!')
