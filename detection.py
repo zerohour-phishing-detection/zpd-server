@@ -221,27 +221,27 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
 
 def check_search_results(url_registered_domain, found_urls) -> 'DetectionResult':
     with TimeIt('SAN domain check'):
-        domain_list_tld_extract = set()
-        # Get SAN names and append
-        for urls in found_urls:
-            domain = domains.get_hostname(urls)
-            try:
-                san_names = [domain] + domains.get_san_names(domain)
-            except:
-                main_logger.error(f'Error in SAN for {domain}', exc_info=1)
-                continue
+        for url in found_urls:
+            # For each found URL, get the hostname
+            domain = domains.get_hostname(url)
             
-            for hostname in san_names:
-                registered_domain = domains.get_registered_domain(hostname)
-                domain_list_tld_extract.append(registered_domain)
+            # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
+            try:
+                san_names = domains.get_san_names(domain)
+            except:
+                main_logger.error(f'Error in SAN for {domain} (from URL {url})', exc_info=1)
+                continue
 
-    main_logger.info(f"SAN check found {len(found_urls)} domains")
-    
-    if url_registered_domain in domain_list_tld_extract:
-        # Allowed domain, due to search results, so no phishing
-        return True
-    
-    return False
+            main_logger.debug(f'Domain of URL `{url}` is {domain}, with SAN names {san_names}')
+            
+            for hostname in [domain] + san_names:
+                # Check if any of the domains found matches the input domain
+                registered_domain = domains.get_registered_domain(hostname)
+                if url_registered_domain == registered_domain:
+                    return True
+        
+        # If no match, no results yet
+        return False
 
 # TODO overlaps with State in sessions.py, merge them or sth
 class DetectionResult:
