@@ -6,5 +6,17 @@ extend-exclude = []
 target-version = "py311"
 
 [lint]
-select = ["E22", "E252", "E4", "E7", "E9", "F", "W291", "C901", "N"]
+# Here we set the
+# E1 - spacing/identation (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+# E22 - whitespace (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+# F - (https://docs.astral.sh/ruff/rules/#pyflakes-f)
+# C901 - complex-structure (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+# N - naming convention (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
+# COM - commas (https://docs.astral.sh/ruff/rules/#pep8-naming-n)
+# I - isort (https://docs.astral.sh/ruff/rules/#isort-i)
+# We could also add the following rules:
+# "ANN0" - missing-type-function-argument (https://docs.astral.sh/ruff/rules/#flake8-annotations-ann)
+# "ANN201" - missing-return-type-undocumented-public-function (https://docs.astral.sh/ruff/rules/#flake8-annotations-ann)
+select = ["E1", "E22", "E252", "E4", "E7", "E9", "F", "W291", "C901", "N", "COM", "I"]
+
 ignore = ["D100"]
