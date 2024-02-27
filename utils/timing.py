@@ -1,6 +1,6 @@
 import time
 from typing import List
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 
 main_logger = CustomLogger().main_logger
 

@@ -8,7 +8,7 @@ import math
 from enum import Enum
 
 # Set up logging
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 main_logger = CustomLogger().main_logger
 
 class RegionData:

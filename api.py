@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 import os
 import signal
 

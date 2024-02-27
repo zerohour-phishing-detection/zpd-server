@@ -3,11 +3,11 @@ from flask import jsonify
 import hashlib
 from utils import domains
 
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 import time
 import os
 from parsing import Parsing
-from utils.reverseimagesearch import ReverseImageSearch
+from utils.reverse_image_search import ReverseImageSearch
 from engines.google import GoogleReverseImageSearchEngine
 import sqlite3
 from selenium import webdriver

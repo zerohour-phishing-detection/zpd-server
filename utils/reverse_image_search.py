@@ -3,7 +3,7 @@ import sqlite3
 import time
 import numpy as np
 
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 import utils.utils as ut
 import utils.region_detection as region_detection
 from utils.region_detection import RegionData    

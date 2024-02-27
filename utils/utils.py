@@ -12,7 +12,7 @@ from datetime import datetime
 import sqlite3
 
 # Setup logging
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 main_logger = CustomLogger().main_logger
 
 def toFile(filename: str, string: str):

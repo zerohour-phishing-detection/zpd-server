@@ -3,10 +3,10 @@ import os
 from urllib.parse import quote_plus
 from ratelimit import limits, sleep_and_retry
 import requests
-from utils.proxygetter import ProxyGetter
+from utils.proxy_getter import ProxyGetter
 
 # Setup logging
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 
 __all__ = ['ReverseImageSearchEngine']
 
