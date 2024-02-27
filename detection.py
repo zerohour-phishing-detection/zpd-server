@@ -106,9 +106,11 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
         url_list_text = [url[0] for url in url_list_text]
 
         # Handle results of search from above
-        res = check_search_results(uuid, url, url_hash, url_registered_domain, url_list_text)
-        if res != None:
-            return res
+        if check_search_results(url_registered_domain, url_list_text):
+            main_logger.info(f'[RESULT] Not phishing, for url {url}, due to registered domain validation')
+            session.set_state('not phishing', '')
+            
+            return DetectionResult(url, url_hash, 'not phishing')
 
     # No match through text, move on to image search
     session.set_state('processing', 'imagesearch')
@@ -129,9 +131,11 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
         url_list_img = [url[0] for url in url_list_img]
 
         # Handle results
-        res = check_search_results(uuid, url, url_hash, url_registered_domain, url_list_img)
-        if res != None:
-            return res
+        if check_search_results(url_registered_domain, url_list_img):
+            main_logger.info(f'[RESULT] Not phishing, for url {url}, due to registered domain validation')
+            session.set_state('not phishing', '')
+            
+            return DetectionResult(url, url_hash, 'not phishing')
 
     # No match through images, go on to image comparison per URL
     with TimeIt('image comparisons'):
@@ -215,10 +219,8 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     
     return False
 
-def check_search_results(uuid, url, url_hash, url_registered_domain, found_urls) -> 'DetectionResult':
+def check_search_results(url_registered_domain, found_urls) -> 'DetectionResult':
     with TimeIt('SAN domain check'):
-        session = session_storage.get_session(uuid, url)
-
         domain_list_tld_extract = set()
         # Get SAN names and append
         for urls in found_urls:
@@ -226,23 +228,20 @@ def check_search_results(uuid, url, url_hash, url_registered_domain, found_urls)
             try:
                 san_names = [domain] + domains.get_san_names(domain)
             except:
-                main_logger.error(f'Error in SAN for {domain}')
+                main_logger.error(f'Error in SAN for {domain}', exc_info=1)
                 continue
             
             for hostname in san_names:
                 registered_domain = domains.get_registered_domain(hostname)
                 domain_list_tld_extract.append(registered_domain)
 
-    main_logger.info(f"SAN check for {url_hash} for {len(found_urls)} domains")
+    main_logger.info(f"SAN check found {len(found_urls)} domains")
     
     if url_registered_domain in domain_list_tld_extract:
-        main_logger.info(f'[RESULT] Not phishing, for url {url}, due to registered domain validation')
-        session.set_state('not phishing', '')
-        
-        return DetectionResult(url, url_hash, 'not phishing')
-
-    # No results yet
-    return None
+        # Allowed domain, due to search results, so no phishing
+        return True
+    
+    return False
 
 # TODO overlaps with State in sessions.py, merge them or sth
 class DetectionResult:
