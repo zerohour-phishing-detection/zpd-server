@@ -1,17 +1,15 @@
-from flask import Flask, request, jsonify, render_template
-
-from utils.custom_logger import CustomLogger
 import os
 import signal
 
-import detection
-
 # To avoid RuntimeError('This event loop is already running') when there are many of requests
 import nest_asyncio
+from flask import Flask, jsonify, render_template, request
+
+import detection
+from utils.custom_logger import CustomLogger
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
-
 
 # The storage interface for the sessions
 session_storage = detection.session_storage
