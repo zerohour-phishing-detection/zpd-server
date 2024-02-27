@@ -6,4 +6,5 @@ extend-exclude = []
 target-version = "py311"
 
 [lint]
-select = ["E", "F", "B", "Q"]
+select = ["E22", "E252", "E4", "E7", "E9", "F", "W291", "C901", "N"]
+ignore = ["D100"]
