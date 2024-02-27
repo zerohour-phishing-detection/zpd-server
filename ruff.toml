@@ -9,7 +9,7 @@ indent-width = 4
 target-version = "py311"
 
 [lint]
-# Here we set the
+# Here we set the rules we want to use.
 # E1 - spacing/identation (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
 # E22 - whitespace (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
 # F - (https://docs.astral.sh/ruff/rules/#pyflakes-f)
@@ -22,6 +22,6 @@ target-version = "py311"
 # "ANN201" - missing-return-type-undocumented-public-function (https://docs.astral.sh/ruff/rules/#flake8-annotations-ann)
 # Sometimes useful:
 # ERA - commented-out-code (https://docs.astral.sh/ruff/rules/#eradicate-era)
-
 select = ["E1", "E22", "E252", "E4", "E7", "E9", "F", "W291", "C901", "N", "COM818", "COM819", "I"]
+# Here we set the rules we want to ignore.
 ignore = []
