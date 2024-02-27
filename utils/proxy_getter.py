@@ -1,7 +1,7 @@
 import proxyscrape
 import threading
 
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 
 class ProxyGetter():
     _main_logger = CustomLogger().main_logger

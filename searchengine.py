@@ -5,7 +5,7 @@ from engines.yandex import YandexReverseImageSearchEngine
 from engines.bing import BingReverseImageSearchEngine
 
 # Setup logging
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
 
 class SearchEngine:
     _main_logger = CustomLogger().main_logger

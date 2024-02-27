@@ -5,7 +5,7 @@ from . import ReverseImageSearchEngine
 import utils.utils as ut
 import time
 from ratelimit import limits, sleep_and_retry
-from utils.proxygetter import ProxyGetter
+from utils.proxy_getter import ProxyGetter
 from requests_html import HTMLSession
 import numpy
 import cv2
