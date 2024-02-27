@@ -174,19 +174,6 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> 'DetectionResult':
     return DetectionResult(url, url_hash, 'inconclusive')
 
 def check_image(driver, out_dir, index, session_file_path, resulturl):
-    urllower = resulturl.lower()
-
-    # TODO whyyyyyyy
-    if (("www.mijnwoordenboek.nl/puzzelwoordenboek/Dot/1" in resulturl) or 
-            ("amsterdamvertical" in resulturl) or ("dotgroningen" in urllower) or 
-            ("britannica" in resulturl) or 
-            ("en.wikipedia.org/wiki/Language" in resulturl) or 
-            (resulturl == '') or 
-            (("horizontal" in urllower) and 
-                not ("horizontal" in domains.get_registered_domain(resulturl)) 
-                or (("vertical" in urllower) and not ("horizontal" in domains.get_registered_domain(resulturl))))):
-        return False
-    
     # Take screenshot of URL and save it
     try:
         driver.get(resulturl)
