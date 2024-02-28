@@ -1,11 +1,14 @@
 # Code Conventions
 
+## Ruff
+We make use of the tool Ruff to enforce the majority of the rules in our code convention. For more information regarding what rules are enforced by Ruff, please check the [Ruff Settings File](https://github.com/zerohour-phishing-detection/zpd-server/blob/main/ruff.toml).
+
 ## Docstrings
 We follow NumPy's docstring conventions, which can be found [here](https://numpydoc.readthedocs.io/en/latest/format.html).
 
 Here is an example of a function documented in such manner:
 ```py
-def doStuff(a, b, c : int = 0) -> tuple[int, str]:
+def do_stuff(a, b, c: int = 0) -> tuple[int, str]:
     """
     This function does some stuff.
 
