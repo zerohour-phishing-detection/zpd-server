@@ -1,6 +1,6 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
-[![Ruff](https://github.com/zerohour-phishing-detection/zpd-server/actions/workflows/ruff.yml/badge.svg)](https://github.com/zerohour-phishing-detection/zpd-server/actions/workflows/ruff.yml)
+[![Linter](https://github.com/zerohour-phishing-detection/zpd-server/actions/workflows/ruff.yml/badge.svg)](https://github.com/zerohour-phishing-detection/zpd-server/actions/workflows/ruff.yml)
 
 # A decision-support tool for experimentation on zero-hour phishing detection
 Code and test data for: 
