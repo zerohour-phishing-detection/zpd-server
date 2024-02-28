@@ -10,7 +10,7 @@ target-version = "py311"
 
 [lint]
 # Here we set the rules we want to use.
-# E1 - spacing/identation (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
+# E1 - spacing/indentation (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
 # E22 - whitespace (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
 # F - (https://docs.astral.sh/ruff/rules/#pyflakes-f)
 # C901 - complex-structure (https://docs.astral.sh/ruff/rules/#pycodestyle-e-w)
