@@ -17,7 +17,7 @@ class YandexReverseImageSearchEngine(ReverseImageSearchEngine):
 
     def __init__(self):
         super(YandexReverseImageSearchEngine, self).__init__(
-            url_base='http://yandex.com',
+            url_base='https://yandex.com',
             url_path='/search/?text={search_term}',
             url_path_upload='/images/search',
             name='Yandex'
