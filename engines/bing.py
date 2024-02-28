@@ -1,26 +1,16 @@
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
-import time
 from ratelimit import limits, sleep_and_retry
 import numpy
 import cv2
-import os
 import base64
 
 from . import ReverseImageSearchEngine
-import utils.utils as ut
-
 
 class BingReverseImageSearchEngine(ReverseImageSearchEngine):
-
     search_start = 0
     next_url = None
     session = None
     retries = 15
-    block_cnt = 0
-    block_time = 0
-    block_max = 5
-    block_timeout = 3600
 
     def __init__(self):
         super(BingReverseImageSearchEngine, self).__init__(
@@ -30,81 +20,36 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
             name='Bing'
         )
 
-    def block_check(self) -> bool:
-        if not self.search_html:
-            return False
-
-        # Reset stats if 30min passed without a block
-        if (time.time() - self.block_time) < 1800:
-            self.block_cnt = 0
-            self.block_time = 0
-
-        block_str = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
-        if (block_str in self.search_html.text):
-            self.block_cnt += 1
-            self.block_time = time.time()
-
-            if self.block_cnt >= self.block_max:
-                self.main_logger.error(f"Blocked too many times by {self.name}. Pausing for {self.block_timeout} seconds.")
-                ut.toFile("status.txt", f"Blocked - Paused")
-                time.sleep(self.block_timeout)
-            else:
-                self.main_logger.error(f"Blocked by {self.name} ({self.block_cnt}/{self.block_max} of long timeout). Pausing for {self.block_timeout/100} seconds.")
-                time.sleep(self.block_timeout/100)
-        return False
-
-    def alarmhandler(self, signum, frame):
-        self.main_logger.error(f"Response took longer then allowed. Cancelling")
-        raise IOError("Did not receive response.")
-
     @sleep_and_retry
     @limits(calls=1, period=15)
     def get_html(self, url=None) -> str:
-        if not url:
+        if url is None:
             raise ValueError('No url defined and no prev url available!')
 
         self.main_logger.info(f"Sending request to: {url}")
 
-        #signal.signal(signal.SIGALRM, self.alarmhandler)
         self.search_html = None
         for i in range(self.retries):
             if not self.search_html:
                 try:
-                        self.main_logger.info(f"Sending get request, attempt: {i}")
-                        #signal.alarm(120)
-                        r = self.session.get(url)
-                        r.html.render(timeout=4.0)
-                        self.search_html = r.html
-                        #signal.alarm(0)
-                        r.close()
-                        self.main_logger.info(f"Status code: {r.status_code}")
-                except Exception as err:
-                        self.main_logger.warning(f"{err}")
-                        pass
-                else:
-                    break
+                    self.main_logger.info(f"Sending get request, attempt: {i}")
+                    r = self.session.get(url)
+                    r.html.render(timeout=4.0)
+                    self.search_html = r.html
+                    r.close()
+                    self.main_logger.info(f"Status code: {r.status_code}")
+                except Exception:
+                    self.main_logger.exception(f"Exception while sending GET request to {url}")
+            else:
+                break
 
         if not self.search_html:
             self.main_logger.error(f"max tries exceeded and no html response for: {url}")
             return False
 
         self.main_logger.debug('Received remote HTML response')
-        self.block_check()
 
         return self.search_html
-
-    def verify_url(self, urlstr:str) -> bool:
-        url = urlparse(urlstr)
-        if url.netloc.startswith('webcache.googleusercontent.'):
-            return False
-        elif url.netloc.startswith('www.google.') and url.query.startswith('q=related:'):
-            return False
-        elif urlstr.startswith('https://www.google.com/imgres?'):
-            return False
-        elif url.netloc.startswith('translate.google.'):
-            return False
-        else:
-            return True
 
     def find_search_result_urls(self) -> list:
         if not self.search_html:
@@ -114,17 +59,11 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
                 raise ValueError('No html retrieved')
 
         full_linkset = []
-        matches = self.search_html.find('.g .yuRUbf a')
-        for match in matches:
-            for l in match.absolute_links:
-                if self.verify_url(l):
-                    full_linkset.append(l)
 
-        matches = self.search_html.find('.g .rc a')
+        matches = self.search_html.find('#b_results .b_algo a')
         for match in matches:
             for l in match.absolute_links:
-                if self.verify_url(l):
-                    full_linkset.append(l)
+                full_linkset.append(l)
         return full_linkset
 
     @sleep_and_retry
@@ -137,61 +76,36 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
 
         multipart = None
 
-        if not (region is None):
+        if region is not None:
             if type(region) is numpy.ndarray:
                 multipart = {'imageBin': (base64.b64encode(cv2.imencode('.jpg', region)[1]))}
-            elif os.path.exists(image):
-                multipart = {'encoded_image': (region, open(region, 'rb'))}
             else:
-                raise NotImplementedError
+                raise NotImplementedError()
 
-        #signal.signal(signal.SIGALRM, self.alarmhandler)
         self.search_html = None
         for i in range(self.retries):
             if not self.search_html:
                 try:
-                        self.main_logger.info(f"Sending post request, attempt: {i}")
-                        #signal.alarm(120)
-                        r = self.session.post(url, files=multipart)
-                        r.html.render(timeout=4.0)
-                        self.main_logger.info(f"Search URL is {r.url}")
-                        self.search_html = r.html
-                        print(r.html)
-                        r.close()
-                        #signal.alarm(0)
-                        self.main_logger.info(f"Status code: {r.status_code}")
+                    self.main_logger.info(f"Sending post request, attempt: {i}")
+                    
+                    r = self.session.post(url, files=multipart)
+                    r.html.render(timeout=4.0)
+                    self.main_logger.info(f"Search URL is {r.url}")
+                    self.search_html = r.html
+                    r.close()
+                    
+                    self.main_logger.info(f"Status code: {r.status_code}")
                 except Exception as err:
                     self.main_logger.warning(f"{err}")
                     pass
             else:
                     break
         self.current = None
-        self.block_check()
 
         return self.search_html
 
     def result_count(self, default=10) -> int:
         return default
-        '''
-        if not self.search_html:
-            raise ValueError("HTML must be retrieved before result count can be parsed")
-        soup = BeautifulSoup(self.search_html.html, 'html.parser')
-        res = soup.find('div', id='result-stats')
-        try:
-            if not res:
-                self.main_logger.info(f"Could not find total result count supplied by {self.name}")
-                return default
-            self.main_logger.info(f"{res.text}")
-            res_cnt = re.search(r'([0-9.,]*)', res.text)
-            if not res_cnt:
-                self.main_logger.info(f"Could not find total result count supplied by {self.name}")
-                return default
-            else:
-                return int(re.sub(".|,","",res_cnt.group(0)))
-        except Exception as err:
-            self.main_logger.error(f"{err} [{res_cnt.group(0)}]")
-            return default
-        '''
 
     @sleep_and_retry
     @limits(calls=1, period=15)
@@ -235,7 +149,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     @limits(calls=1, period=15)
     def _handle_search(self, n):
         results  = self.find_search_result_urls()
-        cnt = self.result_count(default=10)
+        cnt = self.result_count()
         self.main_logger.info(f"Found {len(results)} initial results.")
         while len(results) < min(n, cnt):
             self.main_logger.info(f"Extending results due to {len(results)} < {min(n, cnt)}")
