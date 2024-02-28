@@ -153,7 +153,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         if region is not None:
             if type(region) is numpy.ndarray:
                 multipart = {"encoded_image": ("temp.png", cv2.imencode(".png", region)[1])}
-            elif os.path.exists(image):
+            elif os.path.exists(image):  # noqa: F821
                 multipart = {"encoded_image": (region, open(region, "rb"))}
             else:
                 raise NotImplementedError
