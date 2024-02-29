@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sqlite3
 import time
@@ -130,7 +131,7 @@ class ReverseImageSearch:
             self._main_logger.error("Failed to create table")
             self._main_logger.error(er)
 
-    def _search_image_all(self, img_path, sha_hash):
+    async def _search_image_all(self, img_path, sha_hash):
         # TODO: Add docstring
 
         self._main_logger.debug("Preparing for search info from: " + sha_hash)
@@ -164,8 +165,9 @@ class ReverseImageSearch:
             self._main_logger.warn(
                 f"Time elapsed for reverseImgSearch for {sha_hash} is {reverse_search_spt - reverse_search_st}"
             )
-
-            self._text_search(search_engine, search_terms, sha_hash)
+            awaits = []
+            awaits.append(self._text_search(search_engine, search_terms, sha_hash))
+            await asyncio.gather(*awaits)
 
         except Exception as err:
             self._main_logger.error(err, exc_info=True)
@@ -317,7 +319,7 @@ class ReverseImageSearch:
                     count_entry += 1
                     self.conn_storage.commit()
 
-    def _text_search(self, search_engine, search_terms, sha_hash):
+    async def _text_search(self, search_engine, search_terms, sha_hash):
         """
         Look up and store 7 results of search_terms using the search engine.
         """
