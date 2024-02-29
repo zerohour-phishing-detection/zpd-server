@@ -1,5 +1,3 @@
-import os
-
 import cv2
 import numpy
 import requests
@@ -7,9 +5,10 @@ from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 from requests_html import HTMLSession
 
-from . import ReverseImageSearchEngine
 import utils.utils as ut
-from utils.proxygetter import ProxyGetter
+from utils.proxy_getter import ProxyGetter
+
+from . import ReverseImageSearchEngine
 
 
 class YandexReverseImageSearchEngine(ReverseImageSearchEngine):
@@ -21,10 +20,10 @@ class YandexReverseImageSearchEngine(ReverseImageSearchEngine):
 
     def __init__(self):
         super(YandexReverseImageSearchEngine, self).__init__(
-            url_base='https://yandex.com',
-            url_path='/search/?text={search_term}',
-            url_path_upload='/images/search',
-            name='Yandex'
+            url_base="https://yandex.com",
+            url_path="/search/?text={search_term}",
+            url_path_upload="/images/search",
+            name="Yandex",
         )
 
     def block_check(self) -> bool:
@@ -103,8 +102,6 @@ class YandexReverseImageSearchEngine(ReverseImageSearchEngine):
         if region is not None:
             if type(region) is numpy.ndarray:
                 multipart = {"upfile": ("temp.png", cv2.imencode(".png", region)[1])}
-            elif os.path.exists(image):
-                multipart = {"upfile": (region, open(region, "rb"))}
             else:
                 raise NotImplementedError
 

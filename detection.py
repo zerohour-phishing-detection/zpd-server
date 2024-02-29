@@ -97,13 +97,15 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
     # Perform text search of the screenshot
     with TimeIt("text-only reverse page search"):
         # Initiate text-only reverse image search instance
-        search = ReverseImageSearch(storage=DB_PATH_OUTPUT,
-                                    search_engines=[GoogleReverseImageSearchEngine()],
-                                    folder=SESSION_FILE_STORAGE_PATH,
-                                    upload=False,
-                                    mode="text",
-                                    htmlsession=html_session,
-                                    clf=logo_classifier)
+        search = ReverseImageSearch(
+            storage=DB_PATH_OUTPUT,
+            search_engines=[GoogleReverseImageSearchEngine()],
+            folder=SESSION_FILE_STORAGE_PATH,
+            upload=False,
+            mode="text",
+            htmlsession=html_session,
+            clf=logo_classifier,
+        )
 
         search.handle_folder(session_file_path, url_hash)
 
@@ -126,15 +128,18 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
     # No match through text, move on to image search
     session.set_state("processing", "imagesearch")
 
-    with TimeIt('image-only reverse page search'):
-        search = ReverseImageSearch(storage=DB_PATH_OUTPUT, 
-                                    search_engines=[GoogleReverseImageSearchEngine()], 
-                                    folder=SESSION_FILE_STORAGE_PATH, 
-                                    upload=True, mode="image", 
-                                    htmlsession=html_session, 
-                                    clf=logo_classifier, 
-                                    clearbit=USE_CLEARBIT_LOGO_API, 
-                                    tld=url_registered_domain)
+    with TimeIt("image-only reverse page search"):
+        search = ReverseImageSearch(
+            storage=DB_PATH_OUTPUT,
+            search_engines=[GoogleReverseImageSearchEngine()],
+            folder=SESSION_FILE_STORAGE_PATH,
+            upload=True,
+            mode="image",
+            htmlsession=html_session,
+            clf=logo_classifier,
+            clearbit=USE_CLEARBIT_LOGO_API,
+            tld=url_registered_domain,
+        )
         search.handle_folder(session_file_path, url_hash)
 
         # Get results from above search

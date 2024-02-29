@@ -3,10 +3,9 @@ from urllib.parse import quote_plus
 
 import requests
 from ratelimit import limits, sleep_and_retry
-import requests
 
-from utils.proxygetter import ProxyGetter
-from utils.customlogger import CustomLogger
+from utils.custom_logger import CustomLogger
+from utils.proxy_getter import ProxyGetter
 
 
 class ReverseImageSearchEngine:
@@ -62,8 +61,7 @@ class ReverseImageSearchEngine:
             return False
 
     def find_search_result_urls(self) -> list:
-        """Searches for URLs in the search results.
-        """
+        """Searches for URLs in the search results."""
         raise NotImplementedError
 
     def get_n_image_matches(self, region, n: int) -> list:

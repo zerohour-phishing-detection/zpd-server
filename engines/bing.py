@@ -1,10 +1,12 @@
-from bs4 import BeautifulSoup
-from ratelimit import limits, sleep_and_retry
-import numpy
-import cv2
 import base64
 
+import cv2
+import numpy
+from bs4 import BeautifulSoup
+from ratelimit import limits, sleep_and_retry
+
 from . import ReverseImageSearchEngine
+
 
 class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     search_start = 0
@@ -24,7 +26,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     @limits(calls=1, period=15)
     def get_html(self, url=None) -> str:
         if url is None:
-            raise ValueError('No url defined and no prev url available!')
+            raise ValueError("No url defined and no prev url available!")
 
         self.main_logger.info(f"Sending request to: {url}")
 
@@ -47,7 +49,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
             self.main_logger.error(f"max tries exceeded and no html response for: {url}")
             return False
 
-        self.main_logger.debug('Received remote HTML response')
+        self.main_logger.debug("Received remote HTML response")
 
         return self.search_html
 
@@ -60,10 +62,10 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
 
         full_linkset = []
 
-        matches = self.search_html.find('#b_results .b_algo a')
+        matches = self.search_html.find("#b_results .b_algo a")
         for match in matches:
-            for l in match.absolute_links:
-                full_linkset.append(l)
+            for link in match.absolute_links:
+                full_linkset.append(link)
         return full_linkset
 
     @sleep_and_retry
@@ -77,9 +79,8 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
         multipart = None
 
         if region is not None:
-        if region is not None:
             if type(region) is numpy.ndarray:
-                multipart = {'imageBin': (base64.b64encode(cv2.imencode('.jpg', region)[1]))}
+                multipart = {"imageBin": (base64.b64encode(cv2.imencode(".jpg", region)[1]))}
             else:
                 raise NotImplementedError()
 
@@ -88,13 +89,13 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
             if not self.search_html:
                 try:
                     self.main_logger.info(f"Sending post request, attempt: {i}")
-                    
+
                     r = self.session.post(url, files=multipart)
                     r.html.render(timeout=4.0)
                     self.main_logger.info(f"Search URL is {r.url}")
                     self.search_html = r.html
                     r.close()
-                    
+
                     self.main_logger.info(f"Status code: {r.status_code}")
                 except Exception as err:
                     self.main_logger.warning(f"{err}")
@@ -149,7 +150,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     @sleep_and_retry
     @limits(calls=1, period=15)
     def _handle_search(self, n):
-        results  = self.find_search_result_urls()
+        results = self.find_search_result_urls()
         cnt = self.result_count()
         self.main_logger.info(f"Found {len(results)} initial results.")
         while len(results) < min(n, cnt):

@@ -1,19 +1,16 @@
-import time
 import random
-
-from urllib.parse import urlparse, parse_qs
-from ratelimit import limits, sleep_and_retry
-
-from requests_html import HTMLSession
-from bs4 import BeautifulSoup
+import time
+from urllib.parse import parse_qs, urlparse
 
 import cv2
 import numpy
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
+from requests_html import HTMLSession
 from skimage.io import imread
 
 import utils.utils as ut
+
 from . import ReverseImageSearchEngine
 
 
@@ -38,11 +35,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             url_base="http://www.google.com",
             url_path="/search?q={search_term}",
             url_path_upload="/searchbyimage/upload",
-            name="Google",
-            url_base="http://www.google.com",
-            url_path="/search?q={search_term}",
-            url_path_upload="/searchbyimage/upload",
-            name="Google",
+            name="Google"
         )
 
     def block_check(self) -> bool:
@@ -56,7 +49,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         block_str = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
         if block_str in self.search_html.text:
-        if block_str in self.search_html.text:
             self.block_cnt += 1
             self.block_time = time.time()
 
@@ -68,7 +60,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 time.sleep(self.block_timeout)
             else:
                 self.main_logger.error(
-                    f"Blocked by {self.name} ({self.block_cnt}/{self.block_max} of long timeout). Pausing for {self.block_timeout/100} seconds."
+                    f"Blocked by {self.name} ({self.block_cnt}/{self.block_max} of long timeout). Pausing for {self.block_timeout / 100} seconds."
                 )
                 time.sleep(self.block_timeout / 100)
         return False
@@ -217,7 +209,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         multipart_data = None
 
         if region is not None:
-        if region is not None:
             if type(region) is numpy.ndarray:
                 png_img = cv2.imencode(".png", region)[1]
                 multipart_data = {"encoded_image": ("temp.png", png_img)}
@@ -295,8 +286,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
     @sleep_and_retry
     @limits(calls=1, period=15)
-    def get_n_image_matches_clearbit(self, htmlsession, tld, n: int) -> list:
-        self.main_logger.info("Starting browser session")
     def get_n_image_matches_clearbit(self, htmlsession, tld, n: int) -> list:
         self.main_logger.info("Starting browser session")
         self.session = htmlsession
