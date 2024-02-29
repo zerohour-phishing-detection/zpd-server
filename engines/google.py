@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup
 
 import cv2
 import numpy
+from bs4 import BeautifulSoup
+from ratelimit import limits, sleep_and_retry
 from skimage.io import imread
 
 import utils.utils as ut
@@ -16,6 +18,8 @@ from . import ReverseImageSearchEngine
 
 
 class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
+    """A :class:`ReverseImageSearchEngine` configured for google.com"""
+
     """A :class:`ReverseImageSearchEngine` configured for google.com"""
 
     search_start = 0
@@ -35,6 +39,10 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             url_path="/search?q={search_term}",
             url_path_upload="/searchbyimage/upload",
             name="Google",
+            url_base="http://www.google.com",
+            url_path="/search?q={search_term}",
+            url_path_upload="/searchbyimage/upload",
+            name="Google",
         )
 
     def block_check(self) -> bool:
@@ -47,6 +55,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             self.block_time = 0
 
         block_str = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
+        if block_str in self.search_html.text:
         if block_str in self.search_html.text:
             self.block_cnt += 1
             self.block_time = time.time()
@@ -68,6 +77,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     @limits(calls=1, period=15)
     def get_html(self, url=None) -> str:
         if not url:
+            raise ValueError("No url defined and no prev url available!")
             raise ValueError("No url defined and no prev url available!")
 
         self.main_logger.info(f"Sending request to: {url}")
@@ -100,6 +110,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             )
             return False
 
+        self.main_logger.debug("Received remote HTML response")
         self.main_logger.debug("Received remote HTML response")
         self.block_check()
 
@@ -206,6 +217,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         multipart_data = None
 
         if region is not None:
+        if region is not None:
             if type(region) is numpy.ndarray:
                 png_img = cv2.imencode(".png", region)[1]
                 multipart_data = {"encoded_image": ("temp.png", png_img)}
@@ -236,6 +248,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                     pass
             else:
                 break
+                break
         self.current = None
         self.block_check()
 
@@ -255,6 +268,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         # Catch not finding the next button
         if not res:
+            res = soup.find("a", id="pnnext")
             res = soup.find("a", id="pnnext")
             if not res:
                 return False
@@ -281,6 +295,8 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
     @sleep_and_retry
     @limits(calls=1, period=15)
+    def get_n_image_matches_clearbit(self, htmlsession, tld, n: int) -> list:
+        self.main_logger.info("Starting browser session")
     def get_n_image_matches_clearbit(self, htmlsession, tld, n: int) -> list:
         self.main_logger.info("Starting browser session")
         self.session = htmlsession
@@ -331,6 +347,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             if self.get_next_results():
                 inc = self.find_search_result_urls()
             else:
+                self.main_logger.info("Extending results failed due to no next button.")
                 self.main_logger.info("Extending results failed due to no next button.")
                 break
 

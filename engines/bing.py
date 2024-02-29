@@ -14,10 +14,10 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
 
     def __init__(self):
         super(BingReverseImageSearchEngine, self).__init__(
-            url_base='https://bing.com',
-            url_path='/search?q={search_term}',
-            url_path_upload='/images/search?view=detailv2&iss=sbiupload&FORM=SBIHMP&sbisrc=ImgPicker&idpbck=1',
-            name='Bing'
+            url_base="https://bing.com",
+            url_path="/search?q={search_term}",
+            url_path_upload="/images/search?view=detailv2&iss=sbiupload&FORM=SBIHMP&sbisrc=ImgPicker&idpbck=1",
+            name="Bing",
         )
 
     @sleep_and_retry
@@ -54,9 +54,9 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     def find_search_result_urls(self) -> list:
         if not self.search_html:
             if not self.search_url:
-                raise ValueError('No html given yet!')
+                raise ValueError("No html given yet!")
             if not self.get_html(self.search_url):
-                raise ValueError('No html retrieved')
+                raise ValueError("No html retrieved")
 
         full_linkset = []
 
@@ -71,11 +71,12 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     def post_html(self, url=None, region=None):
         if not url:
             if not self.search_url:
-                raise ValueError('No url defined and no last_searched_url available!')
+                raise ValueError("No url defined and no last_searched_url available!")
             url = self.search_url
 
         multipart = None
 
+        if region is not None:
         if region is not None:
             if type(region) is numpy.ndarray:
                 multipart = {'imageBin': (base64.b64encode(cv2.imencode('.jpg', region)[1]))}
@@ -99,7 +100,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
                     self.main_logger.warning(f"{err}")
                     pass
             else:
-                    break
+                break
         self.current = None
 
         return self.search_html
@@ -112,37 +113,37 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
     def get_next_results(self):
         if not self.search_html:
             raise ValueError("HTML must be retrieved before result count can be parsed")
-        soup = BeautifulSoup(self.search_html.html, 'html.parser')
-        res = soup.find('div', id='pnnext')
-        #Catch not finding the next button
+        soup = BeautifulSoup(self.search_html.html, "html.parser")
+        res = soup.find("div", id="pnnext")
+        # Catch not finding the next button
         if not res:
-            res = soup.find('a', id='pnnext')
+            res = soup.find("a", id="pnnext")
             if not res:
                 return False
-        next_link = self.url_base + res['href']
+        next_link = self.url_base + res["href"]
         self.get_html(next_link)
         return True
 
     @sleep_and_retry
     @limits(calls=1, period=15)
-    def get_n_image_matches(self, htmlsession, region, n:int) -> list:
-        self.main_logger.info(f"Starting browser session")
+    def get_n_image_matches(self, htmlsession, region, n: int) -> list:
+        self.main_logger.info("Starting browser session")
         self.session = htmlsession
         self.post_html(url=self.get_upload_link(), region=region)
         r = self._handle_search(n)
-        self.main_logger.info(f"Ending browser session")
-        #self.session.close()
+        self.main_logger.info("Ending browser session")
+        # self.session.close()
         return r
 
     @sleep_and_retry
     @limits(calls=1, period=15)
-    def get_n_text_matches(self, htmlsession, text:str, n:int) -> list:
-        self.main_logger.info(f"Starting browser session")
+    def get_n_text_matches(self, htmlsession, text: str, n: int) -> list:
+        self.main_logger.info("Starting browser session")
         self.session = htmlsession
         self.get_html(url=self.get_search_link_by_terms(text))
         r = self._handle_search(n)
-        self.main_logger.info(f"Ending browser session")
-        #self.session.close()
+        self.main_logger.info("Ending browser session")
+        # self.session.close()
         return r
 
     @sleep_and_retry
@@ -157,13 +158,15 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
             if self.get_next_results():
                 inc = self.find_search_result_urls()
             else:
-                self.main_logger.info(f"Extending results failed due to no next button.")
+                self.main_logger.info("Extending results failed due to no next button.")
                 break
             # Failsafe incase we somehow cant find more results
             if len(inc) == 0:
-                self.main_logger.warning(f"Extending results failed due to no increment.")
+                self.main_logger.warning("Extending results failed due to no increment.")
                 break
-            self.main_logger.info(f"Found {len(inc)} additional results, totaling to: {len(results) + len(inc)}")
+            self.main_logger.info(
+                f"Found {len(inc)} additional results, totaling to: {len(results) + len(inc)}"
+            )
             results += inc
         if len(results) > n:
             results = results[0:n]
