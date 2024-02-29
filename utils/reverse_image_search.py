@@ -157,17 +157,17 @@ class ReverseImageSearch:
 
         try:
             reverse_search_st = time.time()
+            awaits = []
 
             for search_engine in self.search_engines:
-                self._rev_image_search(poi, search_engine, sha_hash)
+                awaits.append(self._rev_image_search(poi, search_engine, sha_hash))
+            await asyncio.gather(*awaits)
 
             reverse_search_spt = time.time()
             self._main_logger.warn(
                 f"Time elapsed for reverseImgSearch for {sha_hash} is {reverse_search_spt - reverse_search_st}"
             )
-            awaits = []
-            awaits.append(self._text_search(search_engine, search_terms, sha_hash))
-            await asyncio.gather(*awaits)
+            self._text_search(search_engine, search_terms, sha_hash)
 
         except Exception as err:
             self._main_logger.error(err, exc_info=True)
@@ -278,7 +278,7 @@ class ReverseImageSearch:
             self._main_logger.error(err, exc_info=True)
             self.conn_storage.rollback()
 
-    def _rev_image_search(self, poi: list[RegionData], search_engine, sha_hash):
+    async def _rev_image_search(self, poi: list[RegionData], search_engine, sha_hash):
         """
         Reverse image search and store 7 image matches results. Also clearbit functionality.
         """
@@ -319,7 +319,7 @@ class ReverseImageSearch:
                     count_entry += 1
                     self.conn_storage.commit()
 
-    async def _text_search(self, search_engine, search_terms, sha_hash):
+    def _text_search(self, search_engine, search_terms, sha_hash):
         """
         Look up and store 7 results of search_terms using the search engine.
         """
