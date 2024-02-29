@@ -1,11 +1,11 @@
 from engines.bing import BingReverseImageSearchEngine
-from engines.tineye import TinEyeReverseImageSearchEngine
 from engines.google import GoogleReverseImageSearchEngine
+from engines.tineye import TinEyeReverseImageSearchEngine
 from engines.yandex import YandexReverseImageSearchEngine
-from engines.bing import BingReverseImageSearchEngine
 
 # Setup logging
 from utils.custom_logger import CustomLogger
+
 
 class SearchEngine:
     _main_logger = CustomLogger().main_logger
