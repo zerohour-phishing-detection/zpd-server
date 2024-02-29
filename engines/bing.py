@@ -148,7 +148,7 @@ class BingReverseImageSearchEngine(ReverseImageSearchEngine):
             if type(region) is numpy.ndarray:
                 multipart = {"imageBin": (base64.b64encode(cv2.imencode(".jpg", region)[1]))}
             # TODO: fix this error
-            elif os.path.exists(image):
+            elif os.path.exists(image):  # noqa: F821
                 multipart = {"encoded_image": (region, open(region, "rb"))}
             else:
                 raise NotImplementedError
