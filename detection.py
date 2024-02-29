@@ -2,6 +2,7 @@ import hashlib
 import os
 import sqlite3
 import time
+from enum import Enum
 
 import joblib
 from flask import jsonify
@@ -59,8 +60,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
 
     url_domain = domains.get_hostname(url)
     url_registered_domain = domains.get_registered_domain(url_domain)
-    # TODO: switch to better hash, cause SHA-1 broken?
-    url_hash = hashlib.sha1(url.encode("utf-8")).hexdigest()
+
+    url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
 
     session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
     session = session_storage.get_session(uuid, url)
@@ -254,13 +255,20 @@ def check_search_results(url_registered_domain, found_urls) -> "DetectionResult"
         # If no match, no results yet
         return False
 
+class ResultTypes(Enum):
+    LEGITIMATE = -1
+    INCONCLUSIVE = 0
+    PHISHING = 1
+    
+    def __str__(self):
+        return self.name
 
 # TODO overlaps with State in sessions.py, merge them or sth
 class DetectionResult:
     url: str
     url_hash: str
 
-    status: str  # 'not phishing', 'phishing', 'inconclusive', 'processing'
+    status: ResultTypes
 
     def __init__(self, url: str, url_hash: str, status: str):
         self.url = url

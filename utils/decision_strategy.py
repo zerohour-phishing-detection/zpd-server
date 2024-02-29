@@ -1,30 +1,59 @@
-from enum import Enum
+from enum import Enum, auto
+
+from detection import ResultTypes
 
 
-class Result(Enum):
-    LEGITIMATE = -1
-    INCONCLUSIVE = 0
-    PHISHING = 1
+class DecisionStrategies(Enum):
+    Strict = auto()
+    Majority = auto()
+    Unanimous = auto()
+
+def decide(strategy: DecisionStrategies, results: list[ResultTypes]) -> ResultTypes:
+    """
+    Given a decision strategy and a list of results, it computes the decision.
+    """
+
+    match strategy:
+        case DecisionStrategies.Strict:
+            return _strict(results)
+        case DecisionStrategies.Majority:
+            return _majority(results)
+        case DecisionStrategies.Unanimous:
+            return _unanimous(results)
+        case _:
+            raise ValueError("Unknown decision strategy!")
 
 
-def majority(results: list[Result]) -> Result:
+def _strict(results: list[ResultTypes]) -> ResultTypes:
+    """
+    Given a list of results it computes the strict decision.
+    """
+
+    if results.count(ResultTypes.PHISHING) > 0:
+        return ResultTypes.PHISHING
+    elif results.count(ResultTypes.INCONCLUSIVE) > 0:
+        return ResultTypes.INCONCLUSIVE
+    ResultTypes.LEGITIMATE
+
+
+def _majority(results: list[ResultTypes]) -> ResultTypes:
     """
     Given a list of results it computes the majority decision.
     """
 
-    diff = results.count(Result.PHISHING) - results.count(Result.LEGITIMATE)
-    return Result(max(-1, min(1, diff)))
+    diff = results.count(ResultTypes.PHISHING) - results.count(ResultTypes.LEGITIMATE)
+    return ResultTypes(max(-1, min(1, diff)))
 
 
-def unanimous(results: list) -> Result:
+def _unanimous(results: list) -> ResultTypes:
     """
     Given a list of results it computes the unanimous decision.
     """
 
-    length = len(results) - results.count(Result.INCONCLUSIVE)
-    diff = results.count(Result.PHISHING) - results.count(Result.LEGITIMATE)
+    length = len(results) - results.count(ResultTypes.INCONCLUSIVE)
+    diff = results.count(ResultTypes.PHISHING) - results.count(ResultTypes.LEGITIMATE)
 
     if abs(diff) != length:
-        return Result.INCONCLUSIVE
+        return ResultTypes.INCONCLUSIVE
 
-    return Result(max(-1, min(1, diff)))
+    return ResultTypes(max(-1, min(1, diff)))

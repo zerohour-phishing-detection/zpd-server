@@ -7,6 +7,7 @@ from flask import Flask, jsonify, render_template, request
 
 import detection
 from utils.custom_logger import CustomLogger
+from utils.decision_strategy import DecisionStrategies
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -69,11 +70,12 @@ def get_url_state():
     result = [{"status": status.result, "state": status.state}]
     return jsonify(result)
 
-@app.route('/api/v1/methods', methods=['GET'])
+
+@app.route("/api/v1/methods", methods=["GET"])
 def get_available_methods():
-    result = [{'decision-strategy' : ['majority', 'unanimous', 'weighted'], 'detection-methods': []}]
+    result = [{"decision-strategy": DecisionStrategies._member_names_, "detection-methods": []}]
     return jsonify(result)
-    
+
 
 # Handle CTRL+C for shutdown
 def signal_handler(sig, frame):
