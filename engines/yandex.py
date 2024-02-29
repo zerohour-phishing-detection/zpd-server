@@ -6,9 +6,8 @@ from ratelimit import limits, sleep_and_retry
 from requests_html import HTMLSession
 
 import utils.utils as ut
+from engines.base import ReverseImageSearchEngine
 from utils.proxy_getter import ProxyGetter
-
-from . import ReverseImageSearchEngine
 
 
 class YandexReverseImageSearchEngine(ReverseImageSearchEngine):

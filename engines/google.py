@@ -10,8 +10,7 @@ from requests_html import HTMLSession
 from skimage.io import imread
 
 import utils.utils as ut
-
-from . import ReverseImageSearchEngine
+from engines.base import ReverseImageSearchEngine
 
 
 class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):

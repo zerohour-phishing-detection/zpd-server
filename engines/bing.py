@@ -5,7 +5,7 @@ import numpy
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 
-from . import ReverseImageSearchEngine
+from engines.base import ReverseImageSearchEngine
 
 
 class BingReverseImageSearchEngine(ReverseImageSearchEngine):
