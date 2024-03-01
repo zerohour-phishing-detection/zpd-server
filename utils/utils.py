@@ -48,16 +48,8 @@ def time_string(time_start, i, n):
     return f"Elapsed: {time_format(elapsed)} - Remaining: {time_format(remaining_time)} - Expected: {time_format(total_time_expected)}"
 
 
-def get_ip():
-    response = requests.post("http://ident.me")
-    return response.text
-
-
-startupip = get_ip()
-
-
 def setstatus(status):
-    to_file(f"log/status-{startupip}.txt", status)
+    to_file("log/status.txt", status)
 
 
 def fix_entries(search, def_db):
