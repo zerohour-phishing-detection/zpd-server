@@ -64,7 +64,7 @@ class ReverseImageSearch:
         if not os.path.isfile(os.path.join(subfolder, "screen.png")):
             self._main_logger.error("No screen.png for: " + subfolder)
         else:
-            if not self._search_image_all(os.path.join(subfolder, "screen.png"), shahash):
+            if not asyncio.run(self._search_image_all(os.path.join(subfolder, "screen.png"), shahash)):
                 self.err += 1
 
     def setup_storage(self):
