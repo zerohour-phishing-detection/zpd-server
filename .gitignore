@@ -10,6 +10,8 @@ venv/
 
 ignore
 
-files/
+compare_screens/
 db/
+files/
+
 mytest.py
