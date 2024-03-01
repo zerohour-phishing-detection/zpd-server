@@ -17,8 +17,6 @@ from engines.base import ReverseImageSearchEngine
 class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     """A :class:`ReverseImageSearchEngine` configured for google.com"""
 
-    """A :class:`ReverseImageSearchEngine` configured for google.com"""
-
     search_start = 0
     next_url = None
     session: HTMLSession = None
@@ -70,7 +68,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     def get_html(self, url=None) -> str:
         if not url:
             raise ValueError("No url defined and no prev url available!")
-            raise ValueError("No url defined and no prev url available!")
 
         self.main_logger.info(f"Sending request to: {url}")
 
@@ -102,7 +99,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             )
             return False
 
-        self.main_logger.debug("Received remote HTML response")
         self.main_logger.debug("Received remote HTML response")
         self.block_check()
 
@@ -260,7 +256,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                     pass
             else:
                 break
-                break
         self.current = None
         self.block_check()
 
@@ -280,7 +275,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         # Catch not finding the next button
         if not res:
-            res = soup.find("a", id="pnnext")
             res = soup.find("a", id="pnnext")
             if not res:
                 return False
@@ -357,7 +351,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             if self.get_next_results():
                 inc = self.find_search_result_urls()
             else:
-                self.main_logger.info("Extending results failed due to no next button.")
                 self.main_logger.info("Extending results failed due to no next button.")
                 break
 
