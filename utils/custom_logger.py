@@ -2,8 +2,6 @@ import logging
 import os
 import time
 
-import requests
-
 
 class CustomLogger:
     """
@@ -12,7 +10,6 @@ class CustomLogger:
 
     _instance = None
     main_logger = None
-    loggerid = None
 
     def __new__(self):
         if self._instance is None:
@@ -23,7 +20,6 @@ class CustomLogger:
     def _setup(self):
         if not os.path.exists("log"):
             os.makedirs("log")
-        self.loggerid = self.get_ip()
 
         self.main_logger = logging.getLogger("mainlogger")
         self.main_logger.setLevel(logging.DEBUG)
@@ -56,7 +52,3 @@ class CustomLogger:
         self.main_logger.addHandler(file_handler_debug)
 
         return self.main_logger
-
-    def get_ip(self):
-        response = requests.post("http://ident.me")
-        return response.text
