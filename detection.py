@@ -6,7 +6,6 @@ from flask import jsonify
 import methods.default_method as reverse_image_search
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision_strategy import DecisionStrategies
 from utils.sessions import SessionStorage
 
 # Option for saving the taken screenshots
@@ -43,22 +42,22 @@ def test_new (data: "DetectionData", settings: "DetectionSettings") -> "Detectio
         else:
             main_logger.error(f"Method {method} not implemented yet.")
     
-    DecisionStrategies.decide(settings.decision_strategy, results)
+    # DecisionStrategies.decide(settings.decision_strategy, results)
       
 class DetectionSettings:
     methods: list[DetectionMethods]
     engines: list[str]
-    decision_strategy: list[DecisionStrategies]
+    # decision_strategy: list[DecisionStrategies]
 
     def __init__(
         self,
         methods: list[DetectionMethods],
         engines: list[str],
-        decision_strategy: list[DecisionStrategies],
+        # decision_strategy: list[DecisionStrategies],
     ):
         self.methods = methods
         self.engines = engines
-        self.decision_strategy = decision_strategy
+        # self.decision_strategy = decision_strategy
 
     # TODO implement from_json
     @classmethod
