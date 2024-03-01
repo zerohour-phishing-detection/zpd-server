@@ -4,7 +4,9 @@ from enum import Enum
 from flask import jsonify
 
 import methods.default_method as reverse_image_search
+from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
+from utils.decision_strategy import DecisionStrategies
 from utils.sessions import SessionStorage
 
 # Option for saving the taken screenshots
@@ -30,6 +32,26 @@ main_logger = CustomLogger().main_logger
 
 def test(data: "DetectionData") -> "DetectionResult":
     return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, "", data.image64)
+
+class DetectionSettings:
+    methods: list[DetectionMethods]
+    engines: list[str]
+    decision_strategy: list[DecisionStrategies]
+
+    def __init__(
+        self,
+        methods: list[DetectionMethods],
+        engines: list[str],
+        decision_strategy: list[DecisionStrategies],
+    ):
+        self.methods = methods
+        self.engines = engines
+        self.decision_strategy = decision_strategy
+
+    # TODO implement from_json
+    @classmethod
+    def from_json(cls, json):
+        pass
 
 
 class DetectionData:
