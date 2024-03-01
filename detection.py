@@ -33,6 +33,18 @@ main_logger = CustomLogger().main_logger
 def test(data: "DetectionData") -> "DetectionResult":
     return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, "", data.image64)
 
+def test_new (data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
+    
+    results = []
+    
+    for method in settings.methods:
+        if method == DetectionMethods.ReverseImageSearch:
+            results += reverse_image_search.test(data.url, data.screenshot_url, data.uuid, "", data.image64)
+        else:
+            main_logger.error(f"Method {method} not implemented yet.")
+    
+    DecisionStrategies.decide(settings.decision_strategy, results)
+      
 class DetectionSettings:
     methods: list[DetectionMethods]
     engines: list[str]
