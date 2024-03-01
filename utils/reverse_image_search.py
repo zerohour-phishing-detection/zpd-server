@@ -157,11 +157,9 @@ class ReverseImageSearch:
 
         try:
             reverse_search_st = time.time()
-            awaits = []
 
             for search_engine in self.search_engines:
-                awaits.append(self._rev_image_search(poi, search_engine, sha_hash))
-            await asyncio.gather(*awaits)
+                await self._rev_image_search(poi, search_engine, sha_hash)
 
             reverse_search_spt = time.time()
             self._main_logger.warn(
@@ -289,22 +287,10 @@ class ReverseImageSearch:
                 f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
             ).fetchall()
 
+            awaits = []
             for region_data in poi:
-                if (sha_hash, region_data.index, region_data.invert) not in topx:
-                    continue
-
-                self._main_logger.info(f"Handling region {region_data.index}")
-
-                res = search_engine.get_n_image_matches(self.htmlsession, region_data.region, n=7)
-                count_entry = 0
-
-                for result in res:
-                    self.conn_storage.execute(
-                        "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                        (sha_hash, search_engine.name, region_data.index, count_entry, result),
-                    )
-                    count_entry += 1
-                    self.conn_storage.commit()
+                awaits.append(self.region_image_search(search_engine, sha_hash, region_data, topx))
+            await asyncio.gather(*awaits)
 
             if self.clearbit:
                 self._main_logger.info("Handling clearbit logo")
@@ -318,6 +304,24 @@ class ReverseImageSearch:
                     )
                     count_entry += 1
                     self.conn_storage.commit()
+
+
+    def region_image_search(self, search_engine, sha_hash, region_data, topx):
+        if (sha_hash, region_data.index, region_data.invert) not in topx:
+            return
+
+        self._main_logger.info(f"Handling region {region_data.index}")
+
+        res = search_engine.get_n_image_matches(self.htmlsession, region_data.region, n=7)
+        count_entry = 0
+
+        for result in res:
+            self.conn_storage.execute(
+                "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
+                (sha_hash, search_engine.name, region_data.index, count_entry, result),
+            )
+            count_entry += 1
+            self.conn_storage.commit()
 
     def _text_search(self, search_engine, search_terms, sha_hash):
         """
