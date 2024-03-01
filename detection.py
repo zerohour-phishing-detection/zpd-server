@@ -213,13 +213,13 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     emd, s_sim = None, None
     try:
         emd = cl.earth_movers_distance(path_a, path_b)
-    except Exception as err:
-        main_logger.error(err)
+    except Exception:
+        main_logger.exception('Error calculating earth_movers_distance')
 
     try:
         s_sim = cl.structural_sim(path_a, path_b)
-    except Exception as err:
-        main_logger.error(err)
+    except Exception:
+        main_logger.exception('Error calculating structural_sim')
 
     main_logger.info(f"Compared url '{resulturl}'")
     main_logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
