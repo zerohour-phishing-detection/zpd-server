@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, urlparse
 
 import cv2
 import numpy
+import requests
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
 from requests_html import HTMLSession
@@ -189,11 +190,11 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 qs = parse_qs(url.query)
                 if "url" not in qs:
                     continue
-                new_link = qs["url"][0]
+                new_link = qs["url"][0]  # noqa: F841
 
                 # Verify URL and add it
-                if self.check_internal_url(new_link):
-                    found_urls.append(new_link)
+                # if self.check_internal_url(new_link):
+                #     found_urls.append(new_link)
 
         return found_urls
 
@@ -210,11 +211,31 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         if region is not None:
             if type(region) is numpy.ndarray:
                 png_img = cv2.imencode(".png", region)[1]
-                multipart_data = {"encoded_image": ("temp.png", png_img)}
+                multipart_data = {"encoded_image": ("temp.png", png_img, 'image/png')}
                 with open(f"files/temp-{random.randint(0, 999999)}.png", "wb") as f:
                     f.write(numpy.array(png_img).tobytes())
             else:
                 raise NotImplementedError()
+
+        # Get cookies
+        cookie_request_data = {
+            'gl': 'NL',
+            'm': '0',
+            'app': '0',
+            'pc': 'l',
+            'continue': 'https://lens.google.com/',
+            'x': '6',
+            'bl': 'boq_identityfrontenduiserver_20240225.08_p0',
+            'hl': 'nl',
+            'src': '1',
+            'cm': '2',
+            'set_sc': 'true',
+            'set_aps': 'true',
+            'set_eom': 'false'
+        }
+        r = requests.post('https://consent.google.com/save', data=cookie_request_data, allow_redirects=False)
+        cookies = r.cookies
+        print('cookieS: ', cookies)
 
         self.search_html = None
         for i in range(self.retries):
@@ -224,12 +245,13 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                         f"Sending post request (to {url}, multipart keys {multipart_data.keys() if multipart_data is not None else None}), attempt: {i}"
                     )
 
-                    r = self.session.post(url, files=multipart_data)
-                    r.html.render(timeout=3.0)
+                    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'}
+                    r = self.session.post('https://lens.google.com/v3/upload?hl=nl&re=df&st=1709288673579&vpw=790&vph=738&ep=gisbubb', files=multipart_data, cookies=cookies, headers=headers)
+                    # r.html.render(timeout=3.0)
                     self.main_logger.info(f"Search URL is {r.url}")
                     self.search_html = r.html
-                    # with open('files/revimgsrch.html', 'w') as f:
-                    #     f.write(r.html.html)
+                    with open('revimgsrch.html', 'w') as f:
+                        f.write(r.html.html)
                     r.close()
 
                     self.main_logger.info(f"Status code: {r.status_code}")

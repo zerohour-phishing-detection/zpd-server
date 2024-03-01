@@ -299,7 +299,7 @@ class ReverseImageSearch:
                 for result in res:
                     self.conn_storage.execute(
                         "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                        (sha_hash, search_engine.name, region_data[1], count_entry, result),
+                        (sha_hash, search_engine.name, region_data.index, count_entry, result),
                     )
                     count_entry += 1
                     self.conn_storage.commit()
