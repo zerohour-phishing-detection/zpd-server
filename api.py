@@ -6,7 +6,7 @@ import nest_asyncio
 from flask import Flask, jsonify, render_template, request
 
 import detection
-from detection import DetectionData
+from detection import DetectionData, DetectionSettings
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
 from utils.decision_strategy import DecisionStrategies
@@ -42,11 +42,17 @@ def check_url():
 
     return res.to_json_str()
 
+
 @app.route("/api/v1/url_new", methods=["POST"])
 def check_url_new():
     json = request.get_json()
+    json_data = json["Data"]
+    json_settings = json["Settings"]
 
-    res = detection.test(DetectionData.from_json(json))
+    res = detection.test(
+        DetectionData.from_json(json_data),
+        DetectionSettings.from_json(json_settings)
+    )
 
     return res.to_json_str()
 
@@ -66,7 +72,12 @@ def get_url_state():
 
 @app.route("/api/v1/methods", methods=["GET"])
 def get_available_methods():
-    result = [{"decision-strategy": DecisionStrategies._member_names_, "detection-methods": DetectionMethods._member_names_}]
+    result = [
+        {
+            "decision-strategy": DecisionStrategies._member_names_,
+            "detection-methods": DetectionMethods._member_names_,
+        }
+    ]
     return jsonify(result)
 
 
