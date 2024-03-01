@@ -7,7 +7,7 @@ import numpy
 import requests
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
-from requests_html import HTMLSession, HTMLResponse, HTML
+from requests_html import HTML, HTMLResponse, HTMLSession
 from skimage.io import imread
 
 import utils.utils as ut
