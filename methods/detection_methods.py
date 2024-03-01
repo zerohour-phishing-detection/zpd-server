@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 
 class DetectionMethods(Enum):
-    Default = ReverseImageSearch = auto()
+    ReverseImageSearch = auto()
     Test = auto()
 
 class DetectionMethod(ABC):

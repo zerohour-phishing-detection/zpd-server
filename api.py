@@ -6,6 +6,8 @@ import nest_asyncio
 from flask import Flask, jsonify, render_template, request
 
 import detection
+from detection import DetectionData
+from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
 from utils.decision_strategy import DecisionStrategies
 
@@ -36,24 +38,15 @@ def shutdown_server():
 def check_url():
     json = request.get_json()
 
-    # main_logger.debug("Received JSON: " + str(json))
-    # main_logger.warn("Received JSON: " + str(json))
-    # main_logger.warn("Received JSON: " + str(json["URL"]))
+    res = detection.test(DetectionData.from_json(json))
 
-    url = json["URL"]
-    screenshot_url = url  # the actual URL to screenshot
+    return res.to_json_str()
 
-    # extra json field for evaluation purposes
-    # the hash computed in the DB is the this one
-    if "phishURL" in json:  # TODO only allow this on a testing environment, not prod
-        url = json["phishURL"]
-        main_logger.info(f"Real URL changed to phishURL: {url}\n")
+@app.route("/api/v1/url_new", methods=["POST"])
+def check_url_new():
+    json = request.get_json()
 
-    uuid = json["uuid"]
-    pagetitle = json["pagetitle"]
-    image64 = json["image64"]
-
-    res = detection.test(url, screenshot_url, uuid, pagetitle, image64)
+    res = detection.test(DetectionData.from_json(json))
 
     return res.to_json_str()
 
@@ -73,7 +66,7 @@ def get_url_state():
 
 @app.route("/api/v1/methods", methods=["GET"])
 def get_available_methods():
-    result = [{"decision-strategy": DecisionStrategies._member_names_, "detection-methods": []}]
+    result = [{"decision-strategy": DecisionStrategies._member_names_, "detection-methods": DetectionMethods._member_names_}]
     return jsonify(result)
 
 

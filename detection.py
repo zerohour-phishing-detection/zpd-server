@@ -3,6 +3,7 @@ from enum import Enum
 
 from flask import jsonify
 
+import methods.default_method as reverse_image_search
 from utils.custom_logger import CustomLogger
 from utils.sessions import SessionStorage
 
@@ -26,13 +27,9 @@ session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 # The main logger for the whole program, singleton
 main_logger = CustomLogger().main_logger
 
-def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
-    main_logger.info(f"""
 
-##########################################################
-##### Request received for URL:\t{url}
-##########################################################
-""")
+def test(data: "DetectionData") -> "DetectionResult":
+    return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, "", data.image64)
 
 
 class DetectionData:
@@ -40,12 +37,28 @@ class DetectionData:
     screenshot_url: str
     uuid: str
     image64: str
-    
-    def __init__(self, url: str, screenshot_url: str, uuid: str, image64: str):
+
+    def __init__(self, url: str = "", screenshot_url: str = "", uuid: str = "", image64: str = ""):
         self.url = url
         self.screenshot_url = screenshot_url
         self.uuid = uuid
         self.image64 = image64
+
+    @classmethod
+    def from_json(cls, json):
+        cls.url = json["URL"]
+        cls.screenshot_url = json["URL"]
+
+        # extra json field for evaluation purposes
+        # the hash computed in the DB is the this one
+        if "phishURL" in json:  # TODO only allow this on a testing environment, not prod
+            cls.url = json["phishURL"]
+            main_logger.info(f"Real URL changed to phishURL: {cls.url}\n")
+
+        cls.uuid = json["uuid"]
+        cls.image64 = json["image64"]
+
+        return cls
 
 
 class ResultTypes(Enum):
