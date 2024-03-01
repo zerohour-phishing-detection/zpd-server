@@ -7,26 +7,24 @@ import numpy
 import requests
 from bs4 import BeautifulSoup
 from ratelimit import limits, sleep_and_retry
-from requests_html import HTMLSession
+from requests_html import HTMLSession, HTMLResponse, HTML
 from skimage.io import imread
 
 import utils.utils as ut
 from engines.base import ReverseImageSearchEngine
 
+BLOCK_STR = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
+BLOCK_MAX = 5
+BLOCK_TIMEOUT = 3600
+
+DEFAULT_RENDER_TIMEOUT = 3.0
 
 class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     """A :class:`ReverseImageSearchEngine` configured for google.com"""
 
-    search_start = 0
-    next_url = None
     session: HTMLSession = None
-    # default 1
-    retries = 1
-    block_cnt = 0
-    block_time = 0
-    block_max = 5
-    block_timeout = 3600
-    # default render timeout for r.html.render(timeout=3.0) = 3 sec
+    blocked_count = 0
+    blocked_time_last = 0
 
     def __init__(self):
         super(GoogleReverseImageSearchEngine, self).__init__(
@@ -36,68 +34,78 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             name="Google"
         )
 
-    def block_check(self) -> bool:
+    def block_check(self):
+        """
+        Check if we've been temporarily blocked by Google.
+
+        Checks using the last made HTML GET requests, from `self.search_html`.
+        Will timeout in case we are blocked.
+        """
         if not self.search_html:
-            return False
+            return
 
         # Reset stats if 30min passed without a block
-        if (time.time() - self.block_time) < 1800:
-            self.block_cnt = 0
-            self.block_time = 0
+        if (time.time() - self.blocked_time_last) < 1800:
+            self.blocked_count = 0
+            self.blocked_time_last = 0
 
-        block_str = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
-        if block_str in self.search_html.text:
-            self.block_cnt += 1
-            self.block_time = time.time()
+        if BLOCK_STR in self.search_html.text:
+            self.blocked_count += 1
+            self.blocked_time_last = time.time()
 
-            if self.block_cnt >= self.block_max:
+            if self.blocked_count >= BLOCK_MAX:
                 self.main_logger.error(
-                    f"Blocked too many times by {self.name}. Pausing for {self.block_timeout} seconds."
+                    f"Blocked too many times by {self.name}. Pausing for {BLOCK_TIMEOUT} seconds."
                 )
-                ut.toFile("status.txt", "Blocked - Paused")
-                time.sleep(self.block_timeout)
+                ut.to_file("status.txt", "Blocked - Paused")
+                
+                time.sleep(BLOCK_TIMEOUT)
             else:
                 self.main_logger.error(
-                    f"Blocked by {self.name} ({self.block_cnt}/{self.block_max} of long timeout). Pausing for {self.block_timeout / 100} seconds."
+                    f"Blocked by {self.name} ({self.blocked_count}/{BLOCK_MAX} of long timeout). Pausing for {BLOCK_TIMEOUT / 100} seconds."
                 )
-                time.sleep(self.block_timeout / 100)
-        return False
+                
+                time.sleep(BLOCK_TIMEOUT / 100)
 
     @sleep_and_retry
     @limits(calls=1, period=15)
-    def get_html(self, url=None) -> str:
-        if not url:
-            raise ValueError("No url defined and no prev url available!")
+    def get_html(self, url: str) -> 'HTML':
+        """Sends an HTML GET request to the given URL and renders it.
 
-        self.main_logger.info(f"Sending request to: {url}")
+        Parameters
+        ----------
+        url: str
+            The URL to send a GET request to.
+        
+        Returns
+        -------
+        requests_html.HTML
+            The HTML instance from the response body of the GET request.
+            Also stored in `self.search_html`.
+        """
+        if url is None:
+            raise ValueError("No URL given")
+
+        self.main_logger.info(f"Sending GET request to: {url}")
 
         self.search_html = None
-        for i in range(self.retries):
-            if not self.search_html:
-                try:
-                    self.main_logger.info(f"Sending get request, attempt: {i}")
+        
+        try:
+            # Make GET request
+            r: HTMLResponse = self.session.get(url)
+            
+            # Render (run JavaScript code in returned website) and store HTML
+            html = r.html
+            html.render(timeout=DEFAULT_RENDER_TIMEOUT)
 
-                    r = self.session.get(url)
-                    r.html.render(timeout=3.0)
+            self.search_html = r
 
-                    self.search_html = r.html
-
-                    r.close()
-
-                    self.main_logger.info(
-                        f"Status code: {r.status_code} from URL {r.url}"
-                    )
-                except Exception as err:
-                    self.main_logger.warning(f"{err}")
-                    pass
-            else:
-                break
-
-        if not self.search_html:
-            self.main_logger.error(
-                f"max tries exceeded and no html response for: {url}"
+            self.main_logger.info(
+                f"Status code: {r.status_code} from URL {r.url}"
             )
-            return False
+        except Exception:
+            self.main_logger.exception("Error while sending GET request to Google")
+            return None
 
         self.main_logger.debug("Received remote HTML response")
         self.block_check()
@@ -148,26 +156,13 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         possibly first fetching the search results using `self.search_url`.
         """
         if not self.search_html:
-            # No search HTML present yet, try fetching it
             if not self.search_url:
                 raise ValueError("No HTML or URL given")
+            # No search HTML present yet, try fetching it
             if not self.get_html(self.search_url):
                 raise ValueError("No HTML was retrieved from URL")
 
         found_urls = []
-        # Old match
-        matches = self.search_html.find(".g .yuRUbf a")
-        for match in matches:
-            for link in match.absolute_links:
-                if self.check_internal_url(link):
-                    found_urls.append(link)
-
-        # Old match
-        matches = self.search_html.find(".g .rc a")
-        for match in matches:
-            for link in match.absolute_links:
-                if self.check_internal_url(link):
-                    found_urls.append(link)
 
         # New reverse image search (if it works)
         matches = self.search_html.find(".Vd9M6 a")
@@ -186,11 +181,11 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
                 qs = parse_qs(url.query)
                 if "url" not in qs:
                     continue
-                new_link = qs["url"][0]  # noqa: F841
+                new_link = qs["url"][0]
 
                 # Verify URL and add it
-                # if self.check_internal_url(new_link):
-                #     found_urls.append(new_link)
+                if self.check_internal_url(new_link):
+                    found_urls.append(new_link)
 
         return found_urls
 
@@ -231,7 +226,6 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         }
         r = requests.post('https://consent.google.com/save', data=cookie_request_data, allow_redirects=False)
         cookies = r.cookies
-        print('cookieS: ', cookies)
 
         self.search_html = None
         for i in range(self.retries):
@@ -243,7 +237,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
                     headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'}
                     r = self.session.post('https://lens.google.com/v3/upload?hl=nl&re=df&st=1709288673579&vpw=790&vph=738&ep=gisbubb', files=multipart_data, cookies=cookies, headers=headers)
-                    # r.html.render(timeout=3.0)
+                    # r.html.render(timeout=DEFAULT_RENDER_TIMEOUT)
                     self.main_logger.info(f"Search URL is {r.url}")
                     self.search_html = r.html
                     with open('revimgsrch.html', 'w') as f:
