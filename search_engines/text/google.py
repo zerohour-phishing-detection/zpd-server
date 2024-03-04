@@ -1,8 +1,7 @@
 import time
-from urllib.parse import parse_qs, urlparse
+from typing import Iterator
+from urllib.parse import parse_qs, quote_plus, urlparse
 
-from bs4 import BeautifulSoup
-from ratelimit import limits, sleep_and_retry
 from requests_html import HTML, HTMLResponse, HTMLSession
 
 import utils.utils as ut
@@ -14,32 +13,36 @@ BLOCK_TIMEOUT = 3600
 
 DEFAULT_RENDER_TIMEOUT = 3.0
 
-class GoogleReverseImageSearchEngine(TextSearchEngine):
-    """A :class:`ReverseImageSearchEngine` configured for google.com"""
+SEARCH_RESULT_SELECTOR = ".egMi0.kCrYT"
+NEXT_PAGE_SELECTOR = ".nBDE1b.G5eFlf"
 
-    session: HTMLSession = None
-    blocked_count = 0
-    blocked_time_last = 0
+# TODO improve cookie page detection
+
+class GoogleTextSearchEngine(TextSearchEngine):
+    """A :class:`TextSearchEngine` configured for google.com"""
+
+    htmlsession: HTMLSession = None
+    blocked_count: int = 0
+    blocked_time_last: int = 0
 
     def __init__(self):
         super().__init__('Google')
 
-    def block_check(self):
+    def block_check(self, html_res: HTMLResponse):
         """
         Check if we've been temporarily blocked by Google.
 
-        Checks using the last made HTML GET requests, from `self.search_html`.
-        Will timeout in case we are blocked.
+        Parameters
+        ----------
+        html_res: HTMLResponse
+            The HTML response to detect blockage in.
         """
-        if not self.search_html:
-            return
-
         # Reset stats if 30min passed without a block
         if (time.time() - self.blocked_time_last) < 1800:
             self.blocked_count = 0
             self.blocked_time_last = 0
 
-        if BLOCK_STR in self.search_html.text:
+        if BLOCK_STR in html_res.text:
             self.blocked_count += 1
             self.blocked_time_last = time.time()
 
@@ -57,105 +60,60 @@ class GoogleReverseImageSearchEngine(TextSearchEngine):
                 
                 time.sleep(BLOCK_TIMEOUT / 100)
 
-    @sleep_and_retry
-    @limits(calls=1, period=15)
-    def get_html(self, url: str) -> 'HTML':
+    def construct_search_url(self, query: str) -> str:
+        """
+        Constructs the search query URL given a text query.
+        """
+        return "https://www.google.com/search?q=" + quote_plus(query)
+
+    def make_request(self, url: str) -> HTMLResponse:
         """Sends an HTML GET request to the given URL and renders it.
 
         Parameters
         ----------
         url: str
-            The URL to send a GET request to.
+            The URL to send the request to.
         
         Returns
         -------
-        requests_html.HTML
-            The HTML instance from the response body of the GET request.
-            Also stored in `self.search_html`.
+        requests_html.HTMLResponse
+            The HTML response from the request.
         """
-        if url is None:
-            raise ValueError("No URL given")
-
-        self.main_logger.info(f"Sending GET request to: {url}")
-
-        self.search_html = None
+        self.main_logger.info(f"Sending request to: {url}")
         
         try:
             # Make GET request
-            r: HTMLResponse = self.session.get(url)
-            
-            # Render (run JavaScript code in returned website) and store HTML
-            html = r.html
-            html.render(timeout=DEFAULT_RENDER_TIMEOUT)
-
-            self.search_html = r
+            html_res: HTMLResponse = self.htmlsession.get(url)
 
             self.main_logger.info(
-                f"Status code: {r.status_code} from URL {r.url}"
+                f"Request returned status code: {html_res.status_code}"
             )
-        except Exception:
-            self.main_logger.exception("Error while sending GET request to Google")
-            return None
+        except Exception as e:
+            raise IOError(f'Error while sending request to Google to URL `{url}`') from e
 
-        self.main_logger.debug("Received remote HTML response")
-        self.block_check()
+        self.block_check(html_res)
 
-        return self.search_html
+        return html_res
 
-    def check_internal_url(self, url: str) -> bool:
-        """
-        Check if a URL is a Google internal URL.
-
-        Returns
-        -------
-        bool
-            `True` if the URL is usable for filtering, or `False`
-            if it's from Google internally.
-        """
-        parsed_url = urlparse(url)
-        netloc = parsed_url.netloc
-        query = parsed_url.query
-        path = parsed_url.path
-
-        # TODO: this may filter out other websites too (e.g. webcache.googleusercontent.mycoolwebsite.com)
-        #         is that an issue?
-
-        # No googleusercontent
-        if netloc.startswith("webcache.googleusercontent."):
-            return False
-
-        # Filter out the related searches suggestion
-        if netloc.startswith("www.google.") and query.startswith("q=related:"):
-            return False
-
-        # No cached images
-        if netloc == "www.google.com" and path == "imgres":
-            return False
-
-        # No Google Translate
-        if netloc.startswith("translate.google."):
-            return False
-
-        return True
-
-    def find_search_result_urls(self) -> list[str]:
+    def extract_search_result_urls(self, html: HTML) -> list[str]:
         """
         Searches for URLs in the search results.
 
-        Looks through `self.search_html` for search result URLs,
-        possibly first fetching the search results using `self.search_url`.
+        Parameters
+        ----------
+        html: HTML
+            The HTML of the Google page to search through.
         """
-        if not self.search_html:
-            if not self.search_url:
-                raise ValueError("No HTML or URL given")
-            # No search HTML present yet, try fetching it
-            if not self.get_html(self.search_url):
-                raise ValueError("No HTML was retrieved from URL")
-
         found_urls = []
 
         # New text search
-        matches = self.search_html.find(".egMi0.kCrYT")
+        matches = html.find(SEARCH_RESULT_SELECTOR)
+        if len(matches) == 0:
+            if "heeft geen overeenkomstige documenten opgeleverd" in html.text:
+                return []
+            
+            raise ValueError("Given HTML wasn't in a known search result format, as no search results were found.")
+
         for match in matches:
             for link in match.absolute_links:
                 # Google has these redirect links, extract the direct link from it in the query parameters
@@ -166,81 +124,104 @@ class GoogleReverseImageSearchEngine(TextSearchEngine):
                 new_link = qs["url"][0]
 
                 # Verify URL and add it
-                if self.check_internal_url(new_link):
-                    found_urls.append(new_link)
+                found_urls.append(new_link)
 
         return found_urls
 
-    def result_count(self, default=10) -> int:
-        return default
+    def get_next_page_link(self, html: HTML, first_page=True) -> str | None:
+        """
+        Obtains the URL for the next page of search results from the given `HTML`.
 
-    @sleep_and_retry
-    @limits(calls=1, period=15)
-    def get_next_results(self):
-        if not self.search_html:
-            raise ValueError("HTML must be retrieved before result count can be parsed")
+        Returns
+        -------
+        str or None
+            The URL for the page containing the next search results,
+            or None if no next page is available.
+        """
+        # First, use CSS selector to find next page button
+        matches = html.find(NEXT_PAGE_SELECTOR)
 
-        soup = BeautifulSoup(self.search_html.html, "html.parser")
-        res = soup.find("div", id="pnnext")
+        with open('next.html', 'w') as f:
+            f.write(html.html)
+        print(matches)
+        if (first_page and len(matches) != 1) or (not first_page and len(matches) != 2):
+            if len(matches) == 0:
+                self.main_logger.warning("Could not find next page button in `HTML` object, possibly indicative of Google interface changes")
+            return None
+            # raise ValueError(f"Could not find next page button in `HTML` object, got {len(matches)} matches: {matches}")
+        
+        # Allow either 1 (next page button) or 2 (previous page + next page) a elements.
+        # Always get the last element, as it is next page.
 
-        # Catch not finding the next button
-        if not res:
-            res = soup.find("a", id="pnnext")
-            if not res:
-                return False
+        # Extract absolute link(s) from that button
+        links = matches[0].absolute_links
+        if len(links) != 1:
+            raise ValueError(f"Next page button has non-one links (it has {len(links)}): {links}")
+        
+        # Return the absolute link
+        return list(links)[0]
 
-        next_link = self.url_base + res["href"]
-        self.get_html(next_link)
-        return True
+    def create_htmlsession(self):
+        """
+        Creates an `HTMLSession` in `self.htmlsession` and initializes it with cookies.
+        """
+        if self.htmlsession is not None:
+            return
+        
+        self.main_logger.info("Starting HTML session")
+        htmlsession = HTMLSession()
 
-    @sleep_and_retry
-    @limits(calls=1, period=15)
-    def get_n_text_matches(self, htmlsession, text: str, n: int) -> list:
-        self.main_logger.info("Starting browser session")
+        # Send cookie consent POST request, cookies will be stored in session object
+        cookie_request_data = {
+            'gl': 'NL',
+            'm': '0',
+            'app': '0',
+            'pc': 'l',
+            'continue': 'https://google.com/',
+            'x': '6',
+            'bl': 'boq_identityfrontenduiserver_20240225.08_p0',
+            'hl': 'nl',
+            'src': '1',
+            'cm': '2',
+            'set_sc': 'true',
+            'set_aps': 'true',
+            'set_eom': 'false'
+        }
+        html_res = htmlsession.post('https://consent.google.com/save', data=cookie_request_data, allow_redirects=False)
+        # Check if the default 2 cookies are present, warn if not
+        if 'SOCS' not in html_res.cookies or 'NID' not in html_res.cookies:
+            self.main_logger.warning("Received Google cookies do not contain expect `SOCS` and `NID` cookies, so search queries may return a cookie page instead")
+        
+        self.main_logger.debug(f"Received cookies: {html_res.cookies}")
 
-        self.session = htmlsession
-        self.get_html(url=self.get_search_link_by_terms(text))
-        r = self._handle_search(n)
+        self.htmlsession = htmlsession
 
-        self.main_logger.info("Ending browser session")
+    def query(self, text: str) -> Iterator['str']:
+        self.create_htmlsession()
 
-        return r
+        # Construct initial search query URL
+        url = self.construct_search_url(text)
+        first_page = True
+        while True:
+            # Execute search query
+            html_res = self.make_request(url)
+            html = html_res.html
+            
+            # Extract URLs from query results
+            extracted_urls = self.extract_search_result_urls(html)
 
-    @sleep_and_retry
-    @limits(calls=1, period=15)
-    def _handle_search(self, n):
-        results = self.find_search_result_urls()
-        cnt = self.result_count(default=10)
-
-        self.main_logger.info(f"Found {len(results)} initial results.")
-
-        while len(results) < min(n, cnt):
-            self.main_logger.info(
-                f"Extending results due to {len(results)} < {min(n, cnt)}"
-            )
-            inc = []
-            if self.get_next_results():
-                inc = self.find_search_result_urls()
-            else:
-                self.main_logger.info("Extending results failed due to no next button.")
+            if len(extracted_urls) == 0:
+                self.main_logger.info('Text search query reached end')
                 break
 
-            # Failsafe incase we somehow cant find more results
-            if len(inc) == 0:
-                self.main_logger.warning(
-                    "Extending results failed due to no increment."
-                )
-                break
+            self.main_logger.info(f'Text search query gave {len(extracted_urls)} results so far')
 
-            self.main_logger.info(
-                f"Found {len(inc)} additional results, totaling to: {len(results) + len(inc)}"
-            )
-            results += inc
-        if len(results) > n:
-            results = results[0:n]
+            # Yield all retrieved URLs
+            for extracted_url in extracted_urls:
+                yield extracted_url
 
-        self.main_logger.info(f"{self.name} - Found: {len(results)} links.")
-        for res in results:
-            self.main_logger.info(f"{res}")
-
-        return results
+            # Continue on with the results from the next page
+            url = self.get_next_page_link(html, first_page=first_page)
+            first_page = False
+            
+            self.main_logger.info(f'Visiting next page with URL `{url}`')
