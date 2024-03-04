@@ -1,11 +1,10 @@
 import os
-from enum import Enum
 
-from flask import jsonify
-
-import methods.default_method as reverse_image_search
+import methods.reverse_image_search as reverse_image_search
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
+from utils.decision import DecisionStrategies
+from utils.results import DetectionResult
 from utils.sessions import SessionStorage
 
 # Option for saving the taken screenshots
@@ -32,24 +31,29 @@ main_logger = CustomLogger().main_logger
 def test(data: "DetectionData") -> "DetectionResult":
     return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, "")
 
-def test_new (data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
-    
+
+def test_new(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
     results = []
-    
+
     for method in settings.methods:
         print(method)
         if method == DetectionMethods.ReverseImageSearch:
-            results += reverse_image_search.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, "")
+            results.append(
+                reverse_image_search.test(
+                    data.url, data.screenshot_url, data.uuid, data.pagetitle, ""
+                )
+            )
         else:
             main_logger.error(f"Method {method} not implemented yet.")
-            
-    return results
-    
-    #DecisionStrategies.decide(settings.decision_strategy, results)
-      
+
+    return DetectionResult(
+        data.url, DecisionStrategies.decide(settings.decision_strategy, results[0].url_hash)
+    )
+
+
 class DetectionSettings:
     methods: list[DetectionMethods]
-    engines: list[str] # in order of priority
+    engines: list[str]  # in order of priority
     # decision_strategy: list[DecisionStrategies]
 
     def __init__(
@@ -62,13 +66,13 @@ class DetectionSettings:
         self.engines = engines
         # self.decision_strategy = decision_strategy
 
-    # TODO implement from_json
     @classmethod
     def from_json(cls, json):
+        # TODO: find a better way to do this
         raw = json["methods"]
-        cls.methods = [method for method in raw if method in DetectionMethods.__members__]
-        print(cls.methods)
-        
+        cls.methods = [
+            DetectionMethods[method] for method in raw if method in DetectionMethods.__members__
+        ]
         cls.engines = json["engines"]
         # cls.decision_strategy = json["decision_strategy"]
 
@@ -81,7 +85,9 @@ class DetectionData:
     uuid: str
     pagetitle: str
 
-    def __init__(self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""):
+    def __init__(
+        self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""
+    ):
         self.url = url
         self.screenshot_url = screenshot_url
         self.uuid = uuid
@@ -94,7 +100,7 @@ class DetectionData:
 
         # extra json field for evaluation purposes
         # the hash computed in the DB is the this one
-        if "phishURL" in json:  # TODO only allow this on a testing environment, not prod
+        if "phishURL" in json:  # TODO: only allow this on a testing environment, not prod
             cls.url = json["phishURL"]
             main_logger.info(f"Real URL changed to phishURL: {cls.url}\n")
 
@@ -102,30 +108,3 @@ class DetectionData:
         cls.uuid = json["uuid"]
 
         return cls
-
-
-class ResultTypes(Enum):
-    LEGITIMATE = -1
-    INCONCLUSIVE = 0
-    PHISHING = 1
-
-    def __str__(self):
-        return self.name
-
-
-# TODO overlaps with State in sessions.py, merge them or sth
-class DetectionResult:
-    url: str
-    url_hash: str
-
-    status: ResultTypes
-
-    def __init__(self, url: str, url_hash: str, status: str):
-        self.url = url
-        self.url_hash = url_hash
-        self.status = status
-
-    def to_json_str(self):
-        # TODO return object doesnt need to specify the type of hash (rename to just 'hash' or sth instead of 'sha1')
-        obj = [{"url": self.url, "status": self.status, "sha1": self.url_hash}]
-        return jsonify(obj)
