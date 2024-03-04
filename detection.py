@@ -30,23 +30,26 @@ main_logger = CustomLogger().main_logger
 
 
 def test(data: "DetectionData") -> "DetectionResult":
-    return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, "", data.image64)
+    return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, "")
 
 def test_new (data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
     
     results = []
     
     for method in settings.methods:
+        print(method)
         if method == DetectionMethods.ReverseImageSearch:
-            results += reverse_image_search.test(data.url, data.screenshot_url, data.uuid, "", data.image64)
+            results += reverse_image_search.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, "")
         else:
             main_logger.error(f"Method {method} not implemented yet.")
+            
+    return results
     
-    # DecisionStrategies.decide(settings.decision_strategy, results)
+    #DecisionStrategies.decide(settings.decision_strategy, results)
       
 class DetectionSettings:
     methods: list[DetectionMethods]
-    engines: list[str]
+    engines: list[str] # in order of priority
     # decision_strategy: list[DecisionStrategies]
 
     def __init__(
@@ -62,20 +65,27 @@ class DetectionSettings:
     # TODO implement from_json
     @classmethod
     def from_json(cls, json):
-        pass
+        raw = json["methods"]
+        cls.methods = [method for method in raw if method in DetectionMethods.__members__]
+        print(cls.methods)
+        
+        cls.engines = json["engines"]
+        # cls.decision_strategy = json["decision_strategy"]
+
+        return cls
 
 
 class DetectionData:
     url: str
     screenshot_url: str
     uuid: str
-    image64: str
+    pagetitle: str
 
-    def __init__(self, url: str = "", screenshot_url: str = "", uuid: str = "", image64: str = ""):
+    def __init__(self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""):
         self.url = url
         self.screenshot_url = screenshot_url
         self.uuid = uuid
-        self.image64 = image64
+        self.pagetitle = pagetitle
 
     @classmethod
     def from_json(cls, json):
@@ -88,8 +98,8 @@ class DetectionData:
             cls.url = json["phishURL"]
             main_logger.info(f"Real URL changed to phishURL: {cls.url}\n")
 
+        cls.pagetitle = json["pagetitle"]
         cls.uuid = json["uuid"]
-        cls.image64 = json["image64"]
 
         return cls
 

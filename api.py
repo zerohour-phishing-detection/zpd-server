@@ -45,16 +45,17 @@ def check_url():
 
 @app.route("/api/v1/url_new", methods=["POST"])
 def check_url_new():
+    # {"Data": {"URL": "https://dashboard.stripe.com/login", "pagetitle": "Stripe Login | Sign in to the Stripe Dashboard", "uuid": "30b8689b-0126-464d-ac4f-49d6336593e0"},
+    # "Settings": {}}
     json = request.get_json()
     json_data = json["Data"]
     json_settings = json["Settings"]
-
-    res = detection.test(
-        DetectionData.from_json(json_data),
-        DetectionSettings.from_json(json_settings)
+    
+    res = detection.test_new(
+        DetectionData.from_json(json_data), DetectionSettings.from_json(json_settings)
     )
 
-    return res.to_json_str()
+    return jsonify(res)
 
 
 @app.route("/api/v1/url/state", methods=["POST"])
@@ -67,6 +68,7 @@ def get_url_state():
     status = session.get_state()
 
     result = [{"status": status.result, "state": status.state}]
+
     return jsonify(result)
 
 
