@@ -1,3 +1,5 @@
+from typing import Iterator
+
 from utils.custom_logger import CustomLogger
 
 
@@ -13,7 +15,7 @@ class TextSearchEngine:
         self.name = name
         self.main_logger = CustomLogger().main_logger
 
-    def query(self, text: str) -> iter[str]:
+    def query(self, text: str) -> Iterator['str']:
         """
         Performs a text search query for the input string `text`
         expecting `n` results.
