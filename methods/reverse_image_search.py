@@ -2,15 +2,14 @@ import hashlib
 import os
 import sqlite3
 import time
-from enum import Enum
 
 import joblib
-from flask import jsonify
 from requests_html import HTMLSession
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
+from detection import DetectionResult
 from engines.google import GoogleReverseImageSearchEngine
 from parsing import Parsing
 from utils import domains
@@ -254,28 +253,3 @@ def check_search_results(url_registered_domain, found_urls) -> "DetectionResult"
 
         # If no match, no results yet
         return False
-
-class ResultTypes(Enum):
-    LEGITIMATE = -1
-    INCONCLUSIVE = 0
-    PHISHING = 1
-    
-    def __str__(self):
-        return self.name
-
-# TODO overlaps with State in sessions.py, merge them or sth
-class DetectionResult:
-    url: str
-    url_hash: str
-
-    status: ResultTypes
-
-    def __init__(self, url: str, url_hash: str, status: str):
-        self.url = url
-        self.url_hash = url_hash
-        self.status = status
-
-    def to_json_str(self):
-        # TODO return object doesnt need to specify the type of hash (rename to just 'hash' or sth instead of 'sha1')
-        obj = [{"url": self.url, "status": self.status, "sha1": self.url_hash}]
-        return jsonify(obj)
