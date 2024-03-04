@@ -7,15 +7,12 @@ from utils.decision import DecisionStrategies
 from utils.result import DetectionResult
 from utils.sessions import SessionStorage
 
-# Option for saving the taken screenshots
-SAVE_SCREENSHOT_FILES = False
-# Whether to use the Clearbit logo API (see https://clearbit.com/logo)
-USE_CLEARBIT_LOGO_API = True
-
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
+
 # Database path for the operational output (?)
 DB_PATH_OUTPUT = "db/output_operational.db"
+
 # Database path for the sessions
 DB_PATH_SESSIONS = "db/sessions.db"
 if not os.path.isdir("db"):
@@ -62,34 +59,33 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
             main_logger.error(f"Method {method} not implemented yet.")
 
     return DetectionResult(
-        data.url, DecisionStrategies.decide(settings.decision_strategy, results[0].url_hash)
+        data.url,
+        DecisionStrategies.decide(settings.decision_strategy, results),
+        results[0].hash_url,
     )
 
 
 class DetectionSettings:
-    methods: list[DetectionMethods]
-    engines: list[str]  # in order of priority
-    # decision_strategy: list[DecisionStrategies]
+    detection_methods: list[DetectionMethods]
+    decision_strategy: list[DecisionStrategies]
 
     def __init__(
         self,
-        methods: list[DetectionMethods],
-        engines: list[str],
-        # decision_strategy: list[DecisionStrategies],
+        detection_methods: list[DetectionMethods],
+        decision_strategy: list[DecisionStrategies],
     ):
-        self.methods = methods
-        self.engines = engines
-        # self.decision_strategy = decision_strategy
+        self.detection_methods = detection_methods
+        self.decision_strategy = decision_strategy
 
     @classmethod
     def from_json(cls, json):
-        # TODO: find a better way to do this
-        raw = json["methods"]
-        cls.methods = [
-            DetectionMethods[method] for method in raw if method in DetectionMethods.__members__
+        cls.detection_methods = [
+            DetectionMethods[method]
+            for method in json["detection-methods"]
+            if method in DetectionMethods.__members__
         ]
-        cls.engines = json["engines"]
-        # cls.decision_strategy = json["decision_strategy"]
+        
+        cls.decision_strategy = json["decision-strategy"]
 
         return cls
 

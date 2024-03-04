@@ -9,24 +9,28 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
-from detection import DetectionResult
 from engines.google import GoogleReverseImageSearchEngine
 from parsing import Parsing
 from utils import domains
 from utils.custom_logger import CustomLogger
+from utils.result import DetectionResult
 from utils.reverse_image_search import ReverseImageSearch
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
 
 # Option for saving the taken screenshots
 SAVE_SCREENSHOT_FILES = False
+
 # Whether to use the Clearbit logo API (see https://clearbit.com/logo)
 USE_CLEARBIT_LOGO_API = True
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
+
 # Database path for the operational output (?)
 DB_PATH_OUTPUT = "db/output_operational.db"
+
+#TODO: Remove this from here
 # Database path for the sessions
 DB_PATH_SESSIONS = "db/sessions.db"
 if not os.path.isdir("db"):
