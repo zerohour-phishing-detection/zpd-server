@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-from detection import ResultTypes
+from utils.result import ResultTypes
 
 
 class DecisionStrategies(Enum):

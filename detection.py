@@ -4,7 +4,7 @@ import methods.reverse_image_search as reverse_image_search
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
 from utils.decision import DecisionStrategies
-from utils.results import DetectionResult
+from utils.result import DetectionResult
 from utils.sessions import SessionStorage
 
 # Option for saving the taken screenshots
