@@ -50,13 +50,6 @@ logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib
 
 
 def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
-    main_logger.info(f"""
-
-##########################################################
-##### Request received for URL:\t{url}
-##########################################################
-""")
-
     url_domain = domains.get_hostname(url)
     url_registered_domain = domains.get_registered_domain(url_domain)
 

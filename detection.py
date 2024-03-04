@@ -28,11 +28,26 @@ session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 main_logger = CustomLogger().main_logger
 
 
+# DEPRECATED
 def test(data: "DetectionData") -> "DetectionResult":
+    main_logger.info(f"""
+
+##########################################################
+##### [DEPRECATED] Request received for URL:\t{data.url}
+##########################################################
+""")
+
     return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, "")
 
 
 def test_new(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
+    main_logger.info(f"""
+
+##########################################################
+##### Request received for URL:\t{data.url}
+##########################################################
+""")
+
     results = []
 
     for method in settings.methods:
