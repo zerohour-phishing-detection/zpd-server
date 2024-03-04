@@ -1,4 +1,6 @@
+import hashlib
 import os
+import time
 
 import methods.reverse_image_search as reverse_image_search
 from methods.detection_methods import DetectionMethods
@@ -6,6 +8,7 @@ from utils.custom_logger import CustomLogger
 from utils.decision import DecisionStrategies
 from utils.result import DetectionResult
 from utils.sessions import SessionStorage
+from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
@@ -27,14 +30,8 @@ main_logger = CustomLogger().main_logger
 
 # DEPRECATED
 def test(data: "DetectionData") -> "DetectionResult":
-    main_logger.info(f"""
 
-##########################################################
-##### [DEPRECATED] Request received for URL:\t{data.url}
-##########################################################
-""")
-
-    return reverse_image_search.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, "")
+    return test_new(data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategies.Majority))
 
 
 def test_new(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
@@ -44,6 +41,21 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
 ##### Request received for URL:\t{data.url}
 ##########################################################
 """)
+    url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
+    session = session_storage.get_session(data.uuid, data.url)
+
+    with TimeIt("cache check"):
+        # Check if URL is in cache or still processing
+        cache_result = session.get_state()
+
+        if cache_result is not None:
+            # Request is already in cache, use result from that (possibly waiting until it is finished)
+            if cache_result.result == "processing":
+                time.sleep(4)  # TODO: oh god
+
+            main_logger.info(f"[RESULT] {cache_result.result}, for url {data.url}, served from cache")
+
+            return DetectionResult(data.url, url_hash, cache_result.result)
 
     results = []
 
@@ -61,18 +73,18 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
     return DetectionResult(
         data.url,
         DecisionStrategies.decide(settings.decision_strategy, results),
-        results[0].hash_url,
+        url_hash,
     )
 
 
 class DetectionSettings:
     detection_methods: list[DetectionMethods]
-    decision_strategy: list[DecisionStrategies]
+    decision_strategy: DecisionStrategies
 
     def __init__(
         self,
         detection_methods: list[DetectionMethods],
-        decision_strategy: list[DecisionStrategies],
+        decision_strategy: DecisionStrategies,
     ):
         self.detection_methods = detection_methods
         self.decision_strategy = decision_strategy
@@ -84,7 +96,7 @@ class DetectionSettings:
             for method in json["detection-methods"]
             if method in DetectionMethods.__members__
         ]
-        
+
         cls.decision_strategy = json["decision-strategy"]
 
         return cls

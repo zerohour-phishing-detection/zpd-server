@@ -54,7 +54,7 @@ def check_url_new():
         DetectionData.from_json(json_data), DetectionSettings.from_json(json_settings)
     )
 
-    return res.to_json_str
+    return res.to_json_str()
 
 
 @app.route("/api/v1/url/state", methods=["POST"])

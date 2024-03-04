@@ -1,7 +1,6 @@
 import hashlib
 import os
 import sqlite3
-import time
 
 import joblib
 from requests_html import HTMLSession
@@ -61,19 +60,6 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
 
     session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
     session = session_storage.get_session(uuid, url)
-
-    with TimeIt("cache check"):
-        # Check if URL is in cache or still processing
-        cache_result = session.get_state()
-
-        if cache_result is not None:
-            # Request is already in cache, use result from that (possibly waiting until it is finished)
-            if cache_result.result == "processing":
-                time.sleep(4)  # TODO: oh god
-
-            main_logger.info(f"[RESULT] {cache_result.result}, for url {url}, served from cache")
-
-            return DetectionResult(url, url_hash, cache_result.result)
 
     # Update the current state in the session storage
     session.set_state("processing", "textsearch")
