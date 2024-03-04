@@ -9,7 +9,7 @@ import detection
 from detection import DetectionData, DetectionSettings
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision_strategy import DecisionStrategies
+from utils.decision import DecisionStrategies
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -34,6 +34,7 @@ def shutdown_server():
     os._exit(0)
 
 
+# DEPRECATED
 @app.route("/api/v1/url", methods=["POST"])
 def check_url():
     json = request.get_json()
@@ -45,17 +46,15 @@ def check_url():
 
 @app.route("/api/v1/url_new", methods=["POST"])
 def check_url_new():
-    # {"Data": {"URL": "https://dashboard.stripe.com/login", "pagetitle": "Stripe Login | Sign in to the Stripe Dashboard", "uuid": "30b8689b-0126-464d-ac4f-49d6336593e0"},
-    # "Settings": {}}
     json = request.get_json()
-    json_data = json["Data"]
-    json_settings = json["Settings"]
-    
+    json_data = json["data"]
+    json_settings = json["settings"]
+
     res = detection.test_new(
         DetectionData.from_json(json_data), DetectionSettings.from_json(json_settings)
     )
 
-    return jsonify(res)
+    return res.to_json_str
 
 
 @app.route("/api/v1/url/state", methods=["POST"])
