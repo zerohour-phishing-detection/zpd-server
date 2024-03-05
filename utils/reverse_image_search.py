@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import os
 import sqlite3
 import time
@@ -287,10 +288,14 @@ class ReverseImageSearch:
                 f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
             ).fetchall()
 
-            awaits = []
+            # Commented out implementation of concurrency
+            # with concurrent.futures.ThreadPoolExecutor() as pool:
+            # loop = asyncio.get_running_loop()
+            # awaits = []
             for region_data in poi:
-                awaits.append(self.region_image_search(search_engine, sha_hash, region_data, topx))
-            await asyncio.gather(*awaits)
+                # awaits.append(loop.run_in_executor(pool, lambda: self.region_image_search(search_engine, sha_hash, region_data, topx)))
+                self.region_image_search(search_engine, sha_hash, region_data, topx)
+            # await asyncio.gather(*awaits)
 
             if self.clearbit:
                 self._main_logger.info("Handling clearbit logo")
