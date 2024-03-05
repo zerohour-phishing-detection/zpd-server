@@ -22,7 +22,7 @@ from utils.timing import TimeIt
 # Option for saving the taken screenshots
 SAVE_SCREENSHOT_FILES = False
 # Whether to use the Clearbit logo API (see https://clearbit.com/logo)
-USE_CLEARBIT_LOGO_API = True
+USE_CLEARBIT_LOGO_API = False
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
