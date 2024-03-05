@@ -1,5 +1,7 @@
 from typing import Iterator
 
+import numpy as np
+
 from utils.custom_logger import CustomLogger
 
 
@@ -15,7 +17,7 @@ class ReverseImageSearchEngine:
         self.name = name
         self.main_logger = CustomLogger().main_logger
 
-    def query(self, region) -> Iterator['str']:
+    def query(self, region: np.ndarray) -> Iterator[str]:
         """
         Performs a reverse image search query for the input region,
         returning an iterator of URL strings.
