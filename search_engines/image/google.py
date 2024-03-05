@@ -5,6 +5,11 @@ from requests_html import HTML, HTMLResponse, HTMLSession
 from search_engines.image.base import ReverseImageSearchEngine
 from utils.google import accept_all_cookies, check_blockage
 
+API_ENDPOINT = (
+    "https://lens.google.com/v3/upload?hl=nl&re=df&st=1709288673579&vpw=790&vph=738&ep=gisbubb"
+)
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+
 SEARCH_RESULT_SELECTOR = ".Vd9M6 a"
 
 
@@ -31,22 +36,18 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         """
         self.create_htmlsession()
 
-        url = "https://lens.google.com/v3/upload?hl=nl&re=df&st=1709288673579&vpw=790&vph=738&ep=gisbubb"
-
         # Encode multipart data
         png_img = cv2.imencode(".png", region)[1]
         multipart_data = {"encoded_image": ("temp.png", png_img, "image/png")}
 
         # Add User Agent header
-        headers = {
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-        }
+        headers = {"user-agent": USER_AGENT}
 
         self.main_logger.info("Sending request to Google Lens")
         try:
             # Make POST request
             html_res: HTMLResponse = self.htmlsession.post(
-                url, files=multipart_data, headers=headers
+                API_ENDPOINT, files=multipart_data, headers=headers
             )
 
             if html_res.status_code != 200:
@@ -77,9 +78,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             )
 
         for match in matches:
-            for link in match.absolute_links:
-                # Verify URL and add it
-                found_urls.append(link)
+            found_urls += match.absolute_links
 
         return found_urls
 

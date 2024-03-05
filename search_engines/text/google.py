@@ -161,17 +161,20 @@ class GoogleTextSearchEngine(TextSearchEngine):
             extracted_urls = self.extract_search_result_urls(html)
 
             if len(extracted_urls) == 0:
-                self.main_logger.info("Text search query reached end")
                 break
 
             self.main_logger.info(f"Text search query gave {len(extracted_urls)} results so far")
 
             # Yield all retrieved URLs
-            for extracted_url in extracted_urls:
-                yield extracted_url
+            yield from extracted_urls
 
             # Continue on with the results from the next page
             url = self.get_next_page_link(html, first_page=first_page)
+            if url is None:
+                break
+
             first_page = False
 
             self.main_logger.info(f"Visiting next page with URL `{url}`")
+
+        self.main_logger.info("Text search query reached end")
