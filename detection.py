@@ -10,8 +10,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
-from engines.google import GoogleReverseImageSearchEngine
 from parsing import Parsing
+from search_engines.image.google import GoogleReverseImageSearchEngine
+from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.custom_logger import CustomLogger
 from utils.reverse_image_search import ReverseImageSearch
@@ -99,7 +100,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
         # Initiate text-only reverse image search instance
         search = ReverseImageSearch(
             storage=DB_PATH_OUTPUT,
-            search_engines=[GoogleReverseImageSearchEngine()],
+            reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+            text_search_engines=[GoogleTextSearchEngine()],
             folder=SESSION_FILE_STORAGE_PATH,
             upload=False,
             mode="text",
@@ -131,7 +133,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
     with TimeIt("image-only reverse page search"):
         search = ReverseImageSearch(
             storage=DB_PATH_OUTPUT,
-            search_engines=[GoogleReverseImageSearchEngine()],
+            reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+            text_search_engines=[GoogleTextSearchEngine()],
             folder=SESSION_FILE_STORAGE_PATH,
             upload=True,
             mode="image",
