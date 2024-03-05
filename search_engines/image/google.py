@@ -1,16 +1,10 @@
-import time
 from typing import Iterator
 
 import cv2
 from requests_html import HTML, HTMLResponse, HTMLSession
 
-import utils.utils as ut
 from search_engines.image.base import ReverseImageSearchEngine
-from utils.google import accept_all_cookies
-
-BLOCK_STR = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
-BLOCK_MAX = 5
-BLOCK_TIMEOUT = 3600
+from utils.google import accept_all_cookies, check_blockage
 
 DEFAULT_RENDER_TIMEOUT = 3.0
 
@@ -20,43 +14,9 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
     """A :class:`ReverseImageSearchEngine` configured for google.com"""
 
     htmlsession: HTMLSession = None
-    blocked_count = 0
-    blocked_time_last = 0
 
     def __init__(self):
         super().__init__('Google')
-
-    def block_check(self, html_res: HTMLResponse):
-        """
-        Check if we've been temporarily blocked by Google.
-
-        Parameters
-        ----------
-        html_res: HTMLResponse
-            The HTML response to detect blockage in.
-        """
-        # Reset stats if 30min passed without a block
-        if (time.time() - self.blocked_time_last) < 1800:
-            self.blocked_count = 0
-            self.blocked_time_last = 0
-
-        if BLOCK_STR in html_res.text:
-            self.blocked_count += 1
-            self.blocked_time_last = time.time()
-
-            if self.blocked_count >= BLOCK_MAX:
-                self.main_logger.error(
-                    f"Blocked too many times by {self.name}. Pausing for {BLOCK_TIMEOUT} seconds."
-                )
-                ut.to_file("status.txt", "Blocked - Paused")
-                
-                time.sleep(BLOCK_TIMEOUT)
-            else:
-                self.main_logger.error(
-                    f"Blocked by {self.name} ({self.blocked_count}/{BLOCK_MAX} of long timeout). Pausing for {BLOCK_TIMEOUT / 100} seconds."
-                )
-                
-                time.sleep(BLOCK_TIMEOUT / 100)
 
     def make_request(self, region) -> HTMLResponse:
         """Sends an HTML POST request to Google Lens with the given region.
@@ -93,7 +53,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         except Exception as e:
             raise IOError('Error while sending request to Google Lens') from e
 
-        self.block_check(html_res)
+        check_blockage(html_res)
 
         return html_res
 

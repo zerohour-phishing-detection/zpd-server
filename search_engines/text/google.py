@@ -1,16 +1,10 @@
-import time
 from typing import Iterator
 from urllib.parse import parse_qs, quote_plus, urlparse
 
 from requests_html import HTML, HTMLResponse, HTMLSession
 
-import utils.utils as ut
 from search_engines.text.base import TextSearchEngine
-from utils.google import accept_all_cookies
-
-BLOCK_STR = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
-BLOCK_MAX = 5
-BLOCK_TIMEOUT = 3600
+from utils.google import accept_all_cookies, check_blockage
 
 DEFAULT_RENDER_TIMEOUT = 3.0
 
@@ -18,49 +12,14 @@ SEARCH_RESULT_SELECTOR = ".egMi0.kCrYT"
 NEXT_PAGE_SELECTOR = ".nBDE1b.G5eFlf"
 
 # TODO improve cookie page detection
-# TODO check if block check is needed
 
 class GoogleTextSearchEngine(TextSearchEngine):
     """A :class:`TextSearchEngine` configured for google.com"""
 
     htmlsession: HTMLSession = None
-    blocked_count: int = 0
-    blocked_time_last: int = 0
 
     def __init__(self):
         super().__init__('Google')
-
-    def block_check(self, html_res: HTMLResponse):
-        """
-        Check if we've been temporarily blocked by Google.
-
-        Parameters
-        ----------
-        html_res: HTMLResponse
-            The HTML response to detect blockage in.
-        """
-        # Reset stats if 30min passed without a block
-        if (time.time() - self.blocked_time_last) < 1800:
-            self.blocked_count = 0
-            self.blocked_time_last = 0
-
-        if BLOCK_STR in html_res.text:
-            self.blocked_count += 1
-            self.blocked_time_last = time.time()
-
-            if self.blocked_count >= BLOCK_MAX:
-                self.main_logger.error(
-                    f"Blocked too many times by {self.name}. Pausing for {BLOCK_TIMEOUT} seconds."
-                )
-                ut.to_file("status.txt", "Blocked - Paused")
-                
-                time.sleep(BLOCK_TIMEOUT)
-            else:
-                self.main_logger.error(
-                    f"Blocked by {self.name} ({self.blocked_count}/{BLOCK_MAX} of long timeout). Pausing for {BLOCK_TIMEOUT / 100} seconds."
-                )
-                
-                time.sleep(BLOCK_TIMEOUT / 100)
 
     def construct_search_url(self, query: str) -> str:
         """
@@ -93,7 +52,7 @@ class GoogleTextSearchEngine(TextSearchEngine):
         except Exception as e:
             raise IOError(f'Error while sending request to Google to URL `{url}`') from e
 
-        self.block_check(html_res)
+        check_blockage(html_res)
 
         return html_res
 
@@ -143,17 +102,13 @@ class GoogleTextSearchEngine(TextSearchEngine):
         # First, use CSS selector to find next page button
         matches = html.find(NEXT_PAGE_SELECTOR)
 
-        with open('next.html', 'w') as f:
-            f.write(html.html)
-        print(matches)
         if (first_page and len(matches) != 1) or (not first_page and len(matches) != 2):
             if len(matches) == 0:
-                self.main_logger.warning("Could not find next page button in `HTML` object, possibly indicative of Google interface changes")
+                self.main_logger.warning("Could not find next page button in `HTML` object, either indicative of no search results or of Google interface changes")
             return None
-            # raise ValueError(f"Could not find next page button in `HTML` object, got {len(matches)} matches: {matches}")
-        
+
         # Allow either 1 (next page button) or 2 (previous page + next page) a elements.
-        # Always get the last element, as it is next page.
+        # Always get the first element, as it is next page.
 
         # Extract absolute link(s) from that button
         links = matches[0].absolute_links
