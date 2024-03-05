@@ -1,6 +1,5 @@
-from typing import Iterator
-
 import cv2
+import numpy as np
 from requests_html import HTML, HTMLResponse, HTMLSession
 
 from search_engines.image.base import ReverseImageSearchEngine
@@ -30,6 +29,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         requests_html.HTMLResponse
             The HTML response from the request.
         """
+        self.create_htmlsession()
 
         url = "https://lens.google.com/v3/upload?hl=nl&re=df&st=1709288673579&vpw=790&vph=738&ep=gisbubb"
 
@@ -97,9 +97,20 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
 
         self.htmlsession = htmlsession
 
-    def query(self, region) -> Iterator["str"]:
-        self.create_htmlsession()
+    def query(self, region: np.ndarray) -> list[str]:
+        """
+        Performs a reverse image search query for the given region.
 
+        Parameters
+        ----------
+        region: np.ndarray
+            The image as region data to search.
+
+        Returns
+        -------
+        list[str]
+            The result URL strings.
+        """
         # Execute search query
         html_res = self.make_request(region)
 
@@ -108,14 +119,8 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         # Extract URLs from query results
         extracted_urls = self.extract_search_result_urls(html)
 
-        if len(extracted_urls) == 0:
-            self.main_logger.info("Reverse image search query reached end")
-            return
-
         self.main_logger.info(
             f"Reverse image search query gave {len(extracted_urls)} results so far"
         )
 
-        # Yield all retrieved URLs
-        for extracted_url in extracted_urls:
-            yield extracted_url
+        return extracted_urls

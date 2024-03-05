@@ -39,6 +39,8 @@ class GoogleTextSearchEngine(TextSearchEngine):
         requests_html.HTMLResponse
             The HTML response from the request.
         """
+        self.create_htmlsession()
+
         self.main_logger.info(f"Sending request to: {url}")
 
         try:
@@ -133,9 +135,20 @@ class GoogleTextSearchEngine(TextSearchEngine):
 
         self.htmlsession = htmlsession
 
-    def query(self, text: str) -> Iterator["str"]:
-        self.create_htmlsession()
+    def query(self, text: str) -> Iterator[str]:
+        """
+        Performs a text search query for the given text.
 
+        Parameters
+        ----------
+        text: str
+            The text to perform the query for.
+
+        Yields
+        ------
+        str
+            The result URL string.
+        """
         # Construct initial search query URL
         url = self.construct_search_url(text)
         first_page = True
