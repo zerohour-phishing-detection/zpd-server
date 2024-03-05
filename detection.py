@@ -1,3 +1,5 @@
+import asyncio
+import concurrent.futures
 import hashlib
 import os
 import sqlite3
@@ -117,7 +119,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
         url_list_text = [url[0] for url in url_list_text]
 
         # Handle results of search from above
-        if check_search_results(url_registered_domain, url_list_text):
+        if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
             main_logger.info(
                 f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
             )
@@ -150,7 +152,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
         url_list_img = [url[0] for url in url_list_img]
 
         # Handle results
-        if check_search_results(url_registered_domain, url_list_img):
+        if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
             main_logger.info(
                 f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
             )
@@ -230,29 +232,40 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     return False
 
 
-def check_search_results(url_registered_domain, found_urls) -> "DetectionResult":
+async def check_search_results(url_registered_domain, found_urls) -> "DetectionResult":
     with TimeIt("SAN domain check"):
-        for url in found_urls:
-            # For each found URL, get the hostname
-            domain = domains.get_hostname(url)
 
-            # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
-            try:
-                san_names = domains.get_san_names(domain)
-            except Exception:
-                main_logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
-                continue
-
-            main_logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
-
-            for hostname in [domain] + san_names:
-                # Check if any of the domains found matches the input domain
-                registered_domain = domains.get_registered_domain(hostname)
-                if url_registered_domain == registered_domain:
-                    return True
-
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            loop = asyncio.get_running_loop()
+            awaits = []
+            for url in found_urls:
+                awaits.append(loop.run_in_executor(pool, lambda: check_url(url_registered_domain, url)))
+            results = await asyncio.gather(*awaits)
+            print(results)
+            if (True in results):
+                return True
         # If no match, no results yet
         return False
+    
+def check_url(url_registered_domain, url) -> "DetectionResult":
+    # For each found URL, get the hostname
+    domain = domains.get_hostname(url)
+
+    # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
+    try:
+        san_names = domains.get_san_names(domain)
+    except Exception:
+        main_logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
+        return
+
+    main_logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
+
+    for hostname in [domain] + san_names:
+        # Check if any of the domains found matches the input domain
+        registered_domain = domains.get_registered_domain(hostname)
+        if url_registered_domain == registered_domain:
+            return True
+    return False
 
 
 # TODO overlaps with State in sessions.py, merge them or sth
