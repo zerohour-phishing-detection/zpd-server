@@ -17,6 +17,7 @@ SEARCH_RESULT_SELECTOR = ".egMi0.kCrYT"
 NEXT_PAGE_SELECTOR = ".nBDE1b.G5eFlf"
 
 # TODO improve cookie page detection
+# TODO check if block check is needed
 
 class GoogleTextSearchEngine(TextSearchEngine):
     """A :class:`TextSearchEngine` configured for google.com"""
