@@ -6,6 +6,7 @@ from requests_html import HTML, HTMLResponse, HTMLSession
 
 import utils.utils as ut
 from search_engines.image.base import ReverseImageSearchEngine
+from utils.google import accept_all_cookies
 
 BLOCK_STR = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
 BLOCK_MAX = 5
@@ -129,28 +130,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         self.main_logger.info("Starting HTML session")
         htmlsession = HTMLSession()
 
-        # Send cookie consent POST request, cookies will be stored in session object
-        cookie_request_data = {
-            'gl': 'NL',
-            'm': '0',
-            'app': '0',
-            'pc': 'l',
-            'continue': 'https://google.com/',
-            'x': '6',
-            'bl': 'boq_identityfrontenduiserver_20240225.08_p0',
-            'hl': 'nl',
-            'src': '1',
-            'cm': '2',
-            'set_sc': 'true',
-            'set_aps': 'true',
-            'set_eom': 'false'
-        }
-        html_res = htmlsession.post('https://consent.google.com/save', data=cookie_request_data, allow_redirects=False)
-        # Check if the default 2 cookies are present, warn if not
-        if 'SOCS' not in html_res.cookies or 'NID' not in html_res.cookies:
-            self.main_logger.warning("Received Google cookies do not contain expect `SOCS` and `NID` cookies, so search queries may return a cookie page instead")
-        
-        self.main_logger.debug(f"Received cookies: {html_res.cookies}")
+        accept_all_cookies(htmlsession)
 
         self.htmlsession = htmlsession
 
