@@ -27,14 +27,14 @@ class DetectionResult:
     url: str
     url_hash: str
 
-    result: str
+    result: ResultTypes
     status: str
 
     def __init__(self, url: str, url_hash: str, status: str, result: ResultTypes):
-        self.url : str = url
-        self.url_hash : str = url_hash
-        self.status : str = status
-        self.result : ResultTypes = result
+        self.url = url
+        self.url_hash = url_hash
+        self.status = status
+        self.result = result
 
     def to_json_str(self):
         # TODO rename status to phase (over the whole codebase)
