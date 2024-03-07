@@ -8,11 +8,9 @@ import numpy as np
 import scipy.stats as ss
 from pywt import dwt2
 
-# Set up logging
-from utils.custom_logger import CustomLogger
+from utils.custom_logger import main_logger
 
-main_logger = CustomLogger().main_logger
-
+logger = main_logger.getChild('utils.region_detection')
 
 class RegionData:
     region = None
@@ -101,7 +99,7 @@ def _draw_regions(
     draw_image = np.copy(image)
 
     for index, region_data in enumerate(regions_data):
-        main_logger.debug(f"Drawing region #{index}")
+        logger.debug(f"Drawing region #{index}")
 
         region_height, region_width, _ = region_data.region.shape
         x = region_data.x
@@ -273,7 +271,7 @@ def _find_regions(
             os.path.join(os.path.dirname(os.path.realpath(image_path)), f"{highlight_name}.png"),
             draw_image,
         )
-        main_logger.debug("Wrote image highlighting the regions to: " + highlight_name)
+        logger.debug("Wrote image highlighting the regions to: " + highlight_name)
 
     return regions_data
 
@@ -289,7 +287,7 @@ def _get_contours(
     Calculates contours and their hierarchy.
     """
 
-    main_logger.debug("Obtaining grayscale version of image")
+    logger.debug("Obtaining grayscale version of image")
     processed_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     if draw:
@@ -300,7 +298,7 @@ def _get_contours(
             processed_img,
         )
 
-    main_logger.debug("Thresholding the image")
+    logger.debug("Thresholding the image")
     if invert:
         cv2.threshold(processed_img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU, processed_img)
     else:
@@ -314,7 +312,7 @@ def _get_contours(
             processed_img,
         )
 
-    main_logger.debug("Dilating")
+    logger.debug("Dilating")
     processed_img = cv2.dilate(
         processed_img, cv2.getStructuringElement(cv2.MORPH_RECT, (7, 5)), iterations=1
     )
@@ -327,7 +325,7 @@ def _get_contours(
             processed_img,
         )
 
-    main_logger.debug("Morphing to merge close area's")
+    logger.debug("Morphing to merge close area's")
     processed_img = cv2.morphologyEx(
         processed_img, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     )
@@ -340,7 +338,7 @@ def _get_contours(
             processed_img,
         )
 
-    main_logger.debug("Eroding")
+    logger.debug("Eroding")
     processed_img = cv2.erode(
         processed_img, cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4)), iterations=1
     )
@@ -353,7 +351,7 @@ def _get_contours(
             processed_img,
         )
 
-    main_logger.debug("Finding contours")
+    logger.debug("Finding contours")
     contours, hierarchy = cv2.findContours(processed_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     return contours, hierarchy
@@ -428,7 +426,7 @@ def find_regions(
         draw_flag == DrawingFlags.FLAG_SUBREGION_DRAW or draw_flag == DrawingFlags.FLAG_DRAW_ALL
     )
 
-    main_logger.debug("Loading image: " + image_path)
+    logger.debug("Loading image: " + image_path)
     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
     img_data = (_count_colours(image), image.shape[0], image.shape[1])

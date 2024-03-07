@@ -6,7 +6,7 @@ import nest_asyncio
 from flask import Flask, jsonify, render_template, request
 
 import detection
-from utils.custom_logger import CustomLogger
+from utils.custom_logger import main_logger
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -15,7 +15,7 @@ nest_asyncio.apply()
 session_storage = detection.session_storage
 
 # The main logger for the whole program, singleton
-main_logger = CustomLogger().main_logger
+logger = main_logger.getChild('api')
 
 # Initiate Flask app
 app = Flask(__name__)
@@ -46,7 +46,7 @@ def check_url():
     # the hash computed in the DB is the this one
     if "phishURL" in json:  # TODO only allow this on a testing environment, not prod
         url = json["phishURL"]
-        main_logger.info(f"Real URL changed to phishURL: {url}\n")
+        logger.info(f"Real URL changed to phishURL: {url}\n")
 
     uuid = json["uuid"]
     pagetitle = json["pagetitle"]

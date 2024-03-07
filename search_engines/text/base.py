@@ -1,6 +1,6 @@
 from typing import Iterator
 
-from utils.custom_logger import CustomLogger
+from utils.custom_logger import main_logger
 
 
 class TextSearchEngine:
@@ -9,11 +9,11 @@ class TextSearchEngine:
     """
     name: str
 
-    main_logger = None
+    logger = None
 
     def __init__(self, name):
         self.name = name
-        self.main_logger = CustomLogger().main_logger
+        self.logger = main_logger.getChild('text_search_engine.' + name)
 
     def query(self, text: str) -> Iterator[str]:
         """

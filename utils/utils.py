@@ -8,9 +8,9 @@ import time
 from bs4 import BeautifulSoup
 
 # Setup logging
-from utils.custom_logger import CustomLogger
+from utils.custom_logger import main_logger
 
-main_logger = CustomLogger().main_logger
+logger = main_logger
 
 
 def to_file(filename: str, string: str):
@@ -70,7 +70,7 @@ def fix_entries(search, def_db):
     search.conn_storage.execute("detach database dba")
     """
 
-    main_logger.info("Double checking where no title results exist")
+    logger.info("Double checking where no title results exist")
     search.mode = "text"
     sql = "select distinct sha1 from brand_table where sha1 not in (select distinct filepath from search_result_text)"
     results = search.conn_storage.execute(sql).fetchall()
@@ -80,7 +80,7 @@ def fix_entries(search, def_db):
     for row in results:
         issue2.add(row[0])
 
-    main_logger.error(f"Stage Text: {len(issue2)} missing entries found.")
+    logger.error(f"Stage Text: {len(issue2)} missing entries found.")
     cnt = 0
 
     for row in issue2:
@@ -90,7 +90,7 @@ def fix_entries(search, def_db):
         )
         search.handle_folder(os.path.join(search.folder, row), row)
 
-    main_logger.info("Double checking where no image results exist")
+    logger.info("Double checking where no image results exist")
 
     search.mode = "image"
     sql = "select distinct sha1 from brand_table where sha1 not in (select distinct filepath from search_result_image)"
@@ -101,7 +101,7 @@ def fix_entries(search, def_db):
     for row in results:
         issue3.add(row[0])
 
-    main_logger.error(f"{len(issue3)} missing image found.")
+    logger.error(f"{len(issue3)} missing image found.")
     cnt = 0
 
     for row in issue3:

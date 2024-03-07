@@ -41,13 +41,13 @@ class GoogleTextSearchEngine(TextSearchEngine):
         """
         self.create_htmlsession()
 
-        self.main_logger.info(f"Sending request to: {url}")
+        self.logger.info(f"Sending request to: {url}")
 
         try:
             # Make GET request
             html_res: HTMLResponse = self.htmlsession.get(url)
 
-            self.main_logger.info(f"Request returned status code: {html_res.status_code}")
+            self.logger.info(f"Request returned status code: {html_res.status_code}")
         except Exception as e:
             raise IOError(f"Error while sending request to Google to URL `{url}`") from e
 
@@ -105,7 +105,7 @@ class GoogleTextSearchEngine(TextSearchEngine):
 
         if (first_page and len(matches) != 1) or (not first_page and len(matches) != 2):
             if len(matches) == 0:
-                self.main_logger.warning(
+                self.logger.warning(
                     "Could not find next page button in `HTML` object, either indicative of no search results or of Google interface changes"
                 )
             return None
@@ -128,7 +128,7 @@ class GoogleTextSearchEngine(TextSearchEngine):
         if self.htmlsession is not None:
             return
 
-        self.main_logger.info("Starting HTML session")
+        self.logger.info("Starting HTML session")
         htmlsession = HTMLSession()
 
         accept_all_cookies(htmlsession)
@@ -163,7 +163,7 @@ class GoogleTextSearchEngine(TextSearchEngine):
             if len(extracted_urls) == 0:
                 break
 
-            self.main_logger.info(f"Text search query gave {len(extracted_urls)} results so far")
+            self.logger.info(f"Text search query gave {len(extracted_urls)} results so far")
 
             # Yield all retrieved URLs
             yield from extracted_urls
@@ -175,6 +175,6 @@ class GoogleTextSearchEngine(TextSearchEngine):
 
             first_page = False
 
-            self.main_logger.info(f"Visiting next page with URL `{url}`")
+            self.logger.info(f"Visiting next page with URL `{url}`")
 
-        self.main_logger.info("Text search query reached end")
+        self.logger.info("Text search query reached end")

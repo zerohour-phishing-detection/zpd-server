@@ -16,7 +16,7 @@ from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
-from utils.custom_logger import CustomLogger
+from utils.custom_logger import main_logger
 from utils.reverse_image_search import ReverseImageSearch
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
@@ -42,7 +42,7 @@ WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 
 # The main logger for the whole program, singleton
-main_logger = CustomLogger().main_logger
+logger = main_logger.getChild('detection')
 
 # The HTTP + HTML session to use for reverse image search
 html_session = HTMLSession()
@@ -53,7 +53,7 @@ logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib
 
 
 def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
-    main_logger.info(f"""
+    logger.info(f"""
 
 ##########################################################
 ##### Request received for URL:\t{url}
@@ -77,7 +77,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
             if cache_result.result == "processing":
                 time.sleep(4)  # TODO: oh god
 
-            main_logger.info(f"[RESULT] {cache_result.result}, for url {url}, served from cache")
+            logger.info(f"[RESULT] {cache_result.result}, for url {url}, served from cache")
 
             return DetectionResult(url, url_hash, cache_result.result)
 
@@ -122,12 +122,12 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
 
         # Handle results of search from above
         if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
-            main_logger.info(
+            logger.info(
                 f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
             )
             session.set_state("not phishing", "")
 
-            return DetectionResult(url, url_hash, "not phishing")
+            # return DetectionResult(url, url_hash, "not phishing")
 
     # No match through text, move on to image search
     session.set_state("processing", "imagesearch")
@@ -156,7 +156,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
 
         # Handle results
         if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
-            main_logger.info(
+            logger.info(
                 f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
             )
             session.set_state("not phishing", "")
@@ -185,7 +185,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
                 # Match for found images, so conclude as phishing
                 driver.quit()
 
-                main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
+                logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
 
                 session.set_state("phishing", "")
 
@@ -197,7 +197,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
     #   e.g. blocked == True
     #   result: inconclusive_blocked
 
-    main_logger.info(f"[RESULT] Inconclusive, for url {url}")
+    logger.info(f"[RESULT] Inconclusive, for url {url}")
 
     session.set_state("inconclusive", "")
     return DetectionResult(url, url_hash, "inconclusive")
@@ -219,15 +219,15 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     try:
         emd = cl.earth_movers_distance(path_a, path_b)
     except Exception:
-        main_logger.exception('Error calculating earth_movers_distance')
+        logger.exception('Error calculating earth_movers_distance')
 
     try:
         s_sim = cl.structural_sim(path_a, path_b)
     except Exception:
-        main_logger.exception('Error calculating structural_sim')
+        logger.exception('Error calculating structural_sim')
 
-    main_logger.info(f"Compared url '{resulturl}'")
-    main_logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
+    logger.info(f"Compared url '{resulturl}'")
+    logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
 
     if ((emd < 0.001) and (s_sim > 0.70)) or ((emd < 0.002) and (s_sim > 0.80)):
         return True
@@ -258,10 +258,10 @@ def check_url(url_registered_domain, url) -> "DetectionResult":
     try:
         san_names = domains.get_san_names(domain)
     except Exception:
-        main_logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
+        logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
         return
 
-    main_logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
+    logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
 
     for hostname in [domain] + san_names:
         # Check if any of the domains found matches the input domain

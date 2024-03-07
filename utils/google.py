@@ -1,11 +1,10 @@
 from requests_html import HTMLResponse, HTMLSession
 
-from utils.custom_logger import CustomLogger
+from utils.custom_logger import main_logger
 
 BLOCK_STR = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
 
-main_logger = CustomLogger().main_logger
-
+logger = main_logger.getChild('utils.google')
 
 def accept_all_cookies(htmlsession: HTMLSession):
     # Send cookie consent POST request, cookies will be stored in session object
@@ -31,20 +30,20 @@ def accept_all_cookies(htmlsession: HTMLSession):
     # Check if the HTML response is as expected
     if str(html_res.status_code)[0] != "3":
         # If status code wasn't a redirect
-        main_logger.error("Cookie accept request did not return expected status code!")
+        logger.error("Cookie accept request did not return expected status code!")
         return
 
     if len(html_res.cookies) == 0:
-        main_logger.error("Cookie accept request did not contain any cookies!")
+        logger.error("Cookie accept request did not contain any cookies!")
         return
 
     # Check if the default 2 cookies are present, warn if not
     if "SOCS" not in html_res.cookies or "NID" not in html_res.cookies:
-        main_logger.warning(
+        logger.warning(
             "Received Google cookies do not contain expect `SOCS` and `NID` cookies, so search queries may return a cookie consent request page instead"
         )
 
-    main_logger.debug(f"Received cookies: {html_res.cookies}")
+    logger.debug(f"Received cookies: {html_res.cookies}")
 
 
 def check_blockage(html_res: HTMLResponse):
