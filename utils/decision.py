@@ -1,12 +1,13 @@
 from enum import Enum, auto
 
-from utils.result import ResultTypes
+from result import ResultTypes
 
 
 class DecisionStrategies(Enum):
     Strict = auto()
     Majority = auto()
     Unanimous = auto()
+
 
 def decide(strategy: DecisionStrategies, results: list[ResultTypes]) -> ResultTypes:
     """

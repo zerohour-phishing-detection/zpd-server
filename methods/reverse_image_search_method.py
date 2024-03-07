@@ -12,7 +12,7 @@ from engines.google import GoogleReverseImageSearchEngine
 from parsing import Parsing
 from utils import domains
 from utils.custom_logger import CustomLogger
-from utils.result import DetectionResult
+from utils.result import ResultTypes
 from utils.reverse_image_search import ReverseImageSearch
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
@@ -29,7 +29,7 @@ SESSION_FILE_STORAGE_PATH = "files/"
 # Database path for the operational output (?)
 DB_PATH_OUTPUT = "db/output_operational.db"
 
-#TODO: Remove this from here
+# TODO: Remove this from here
 # Database path for the sessions
 DB_PATH_SESSIONS = "db/sessions.db"
 if not os.path.isdir("db"):
@@ -52,17 +52,13 @@ html_session.browser  # TODO why is this here
 logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib")
 
 
-def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
+def test(url, screenshot_url, uuid, pagetitle, image64) -> "ResultTypes":
     url_domain = domains.get_hostname(url)
     url_registered_domain = domains.get_registered_domain(url_domain)
 
     url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
 
     session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
-    session = session_storage.get_session(uuid, url)
-
-    # Update the current state in the session storage
-    session.set_state("processing", "textsearch")
 
     with TimeIt("taking screenshot"):
         # Take screenshot of requested page
@@ -104,12 +100,10 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
             main_logger.info(
                 f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
             )
-            session.set_state("not phishing", "")
 
-            return DetectionResult(url, url_hash, "not phishing")
+            return ResultTypes.LEGITIMATE
 
     # No match through text, move on to image search
-    session.set_state("processing", "imagesearch")
 
     with TimeIt("image-only reverse page search"):
         search = ReverseImageSearch(
@@ -137,14 +131,11 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
             main_logger.info(
                 f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
             )
-            session.set_state("not phishing", "")
 
-            return DetectionResult(url, url_hash, "not phishing")
+            return ResultTypes.LEGITIMATE
 
     # No match through images, go on to image comparison per URL
     with TimeIt("image comparisons"):
-        session.set_state("processing", "imagecompare")
-
         out_dir = os.path.join("compare_screens", url_hash)
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
@@ -165,9 +156,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
 
                 main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
 
-                session.set_state("phishing", "")
-
-                return DetectionResult(url, url_hash, "phishing")
+                return ResultTypes.PHISHING
 
         driver.quit()
 
@@ -177,8 +166,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
 
     main_logger.info(f"[RESULT] Inconclusive, for url {url}")
 
-    session.set_state("inconclusive", "")
-    return DetectionResult(url, url_hash, "inconclusive")
+    return ResultTypes.INCONCLUSIVE
 
 
 def check_image(driver, out_dir, index, session_file_path, resulturl):
@@ -213,7 +201,7 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     return False
 
 
-def check_search_results(url_registered_domain, found_urls) -> "DetectionResult":
+def check_search_results(url_registered_domain, found_urls) -> bool:
     with TimeIt("SAN domain check"):
         for url in found_urls:
             # For each found URL, get the hostname

@@ -1,12 +1,11 @@
 import hashlib
 import os
-import time
 
-import methods.reverse_image_search as reverse_image_search
+import methods.reverse_image_search_method as reverse_image_search_method
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DecisionStrategies
-from utils.result import DetectionResult
+from utils.decision import DecisionStrategies, decide
+from utils.result import DetectionResult, ResultTypes
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
 
@@ -30,8 +29,9 @@ main_logger = CustomLogger().main_logger
 
 # DEPRECATED
 def test(data: "DetectionData") -> "DetectionResult":
-
-    return test_new(data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategies.Majority))
+    return test_new(
+        data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategies.Majority)
+    )
 
 
 def test_new(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
@@ -49,32 +49,36 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
         cache_result = session.get_state()
 
         if cache_result is not None:
-            # Request is already in cache, use result from that (possibly waiting until it is finished)
-            if cache_result.result == "processing":
-                time.sleep(4)  # TODO: oh god
+            # # Request is already in cache, use result from that (possibly waiting until it is finished)
+            # if cache_result.result == "processing":
+            #     time.sleep(4)  # TODO: oh god
 
-            main_logger.info(f"[RESULT] {cache_result.result}, for url {data.url}, served from cache")
+            main_logger.info(
+                f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
+            )
 
             return DetectionResult(data.url, url_hash, cache_result.result)
 
+    # Update the current state in the session storage
+    session.set_state(ResultTypes.PROCESSING, "started")
+
     results = []
 
-    for method in settings.methods:
+    for method in settings.detection_methods:
         print(method)
         if method == DetectionMethods.ReverseImageSearch:
             results.append(
-                reverse_image_search.test(
+                reverse_image_search_method.test(
                     data.url, data.screenshot_url, data.uuid, data.pagetitle, ""
                 )
             )
         else:
             main_logger.error(f"Method {method} not implemented yet.")
 
-    return DetectionResult(
-        data.url,
-        DecisionStrategies.decide(settings.decision_strategy, results),
-        url_hash,
-    )
+    result = decide(settings.decision_strategy, results)
+    session.set_state(result, "done")
+
+    return DetectionResult(data.url, result, url_hash)
 
 
 class DetectionSettings:
@@ -97,7 +101,7 @@ class DetectionSettings:
             if method in DetectionMethods.__members__
         ]
 
-        cls.decision_strategy = json["decision-strategy"]
+        cls.decision_strategy = DecisionStrategies[json["decision-strategy"]]
 
         return cls
 
