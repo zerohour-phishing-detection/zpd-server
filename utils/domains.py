@@ -11,7 +11,7 @@ def get_hostname(url):
 
 def get_san_names(domain):
     context = ssl.create_default_context()
-    with socket.create_connection((domain, 443), timeout=2) as sock:
+    with socket.create_connection((domain, 443), timeout=5) as sock:
         with context.wrap_socket(sock, server_hostname=domain) as ssock:
             cert = ssock.getpeercert()
             sans = {}

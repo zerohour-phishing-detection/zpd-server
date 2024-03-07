@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import os
 import sqlite3
@@ -68,7 +69,7 @@ class ReverseImageSearch:
         if not os.path.isfile(os.path.join(subfolder, "screen.png")):
             self._main_logger.error("No screen.png for: " + subfolder)
         else:
-            if not self._search_image_all(os.path.join(subfolder, "screen.png"), shahash):
+            if not asyncio.run(self._search_image_all(os.path.join(subfolder, "screen.png"), shahash)):
                 self.err += 1
 
     def setup_storage(self):
@@ -135,7 +136,7 @@ class ReverseImageSearch:
             self._main_logger.error("Failed to create table")
             self._main_logger.error(er)
 
-    def _search_image_all(self, img_path, sha_hash):
+    async def _search_image_all(self, img_path, sha_hash):
         # TODO: Add docstring
 
         self._main_logger.debug("Preparing for search info from: " + sha_hash)
@@ -163,7 +164,7 @@ class ReverseImageSearch:
             reverse_search_st = time.time()
 
             for revimg_search_engine in self.reverse_image_search_engines:
-                self._rev_image_search(poi, revimg_search_engine, sha_hash)
+                await self._rev_image_search(poi, revimg_search_engine, sha_hash)
 
             reverse_search_spt = time.time()
             self._main_logger.warn(
@@ -282,7 +283,7 @@ class ReverseImageSearch:
             self._main_logger.error(err, exc_info=True)
             self.conn_storage.rollback()
 
-    def _rev_image_search(self, poi: list[RegionData], revimg_search_engine: ReverseImageSearchEngine, sha_hash):
+    async def _rev_image_search(self, poi: list[RegionData], revimg_search_engine: ReverseImageSearchEngine, sha_hash):
         """
         Reverse image search and store 7 image matches results. Also clearbit functionality.
         """
@@ -293,6 +294,7 @@ class ReverseImageSearch:
                 f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
             ).fetchall()
 
+            # TODO: concurrency here
             for region_data in poi:
                 if (sha_hash, region_data.index, region_data.invert) not in topx:
                     continue

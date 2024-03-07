@@ -27,7 +27,7 @@ lazy_loader==0.3
 lxml==5.1.0
 MarkupSafe==2.1.5
 matplotlib==3.8.2
-nest-asyncio==1.5.5
+nest-asyncio==1.6.0
 networkx==3.2.1
 numpy==1.26.1
 opencv-python==4.9.0.80
