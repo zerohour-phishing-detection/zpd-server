@@ -127,7 +127,7 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
             )
             session.set_state("not phishing", "")
 
-            # return DetectionResult(url, url_hash, "not phishing")
+            return DetectionResult(url, url_hash, "not phishing")
 
     # No match through text, move on to image search
     session.set_state("processing", "imagesearch")
