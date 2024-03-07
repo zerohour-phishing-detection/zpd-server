@@ -47,122 +47,123 @@ html_session.browser  # TODO why is this here
 # The logo classifier, deserialized from file
 logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib")
 
+class ReverseImageSearchMethod:
 
-def test(url, screenshot_url, uuid, pagetitle, image64) -> "ResultTypes":
-    url_domain = domains.get_hostname(url)
-    url_registered_domain = domains.get_registered_domain(url_domain)
+    def test(self, url, screenshot_url, uuid, pagetitle, image64) -> "ResultTypes":
+        url_domain = domains.get_hostname(url)
+        url_registered_domain = domains.get_registered_domain(url_domain)
 
-    url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
+        url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()
 
-    session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
+        session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
 
-    with TimeIt("taking screenshot"):
-        # Take screenshot of requested page
-        parsing = Parsing(
-            SAVE_SCREENSHOT_FILES,
-            pagetitle,
-            image64,
-            screenshot_url,
-            store=session_file_path,
-        )
-        screenshot_width, screenshot_height = parsing.get_size()
+        with TimeIt("taking screenshot"):
+            # Take screenshot of requested page
+            parsing = Parsing(
+                SAVE_SCREENSHOT_FILES,
+                pagetitle,
+                image64,
+                screenshot_url,
+                store=session_file_path,
+            )
+            screenshot_width, screenshot_height = parsing.get_size()
 
-    db_conn_output = sqlite3.connect(DB_PATH_OUTPUT)
+        db_conn_output = sqlite3.connect(DB_PATH_OUTPUT)
 
-    # Perform text search of the screenshot
-    with TimeIt("text-only reverse page search"):
-        # Initiate text-only reverse image search instance
-        search = ReverseImageSearch(
-            storage=DB_PATH_OUTPUT,
-            search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
-            folder=SESSION_FILE_STORAGE_PATH,
-            upload=False,
-            mode="text",
-            htmlsession=html_session,
-            clf=logo_classifier,
-        )
-
-        search.handle_folder(session_file_path, url_hash)
-
-        # Get result from the above search
-        url_list_text = db_conn_output.execute(
-            "SELECT DISTINCT result FROM search_result_text WHERE filepath = ?",
-            [url_hash],
-        ).fetchall()
-        url_list_text = [url[0] for url in url_list_text]
-
-        # Handle results of search from above
-        if check_search_results(url_registered_domain, url_list_text):
-            main_logger.info(
-                f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
+        # Perform text search of the screenshot
+        with TimeIt("text-only reverse page search"):
+            # Initiate text-only reverse image search instance
+            search = ReverseImageSearch(
+                storage=DB_PATH_OUTPUT,
+                search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
+                folder=SESSION_FILE_STORAGE_PATH,
+                upload=False,
+                mode="text",
+                htmlsession=html_session,
+                clf=logo_classifier,
             )
 
-            return ResultTypes.LEGITIMATE
+            search.handle_folder(session_file_path, url_hash)
 
-    # No match through text, move on to image search
+            # Get result from the above search
+            url_list_text = db_conn_output.execute(
+                "SELECT DISTINCT result FROM search_result_text WHERE filepath = ?",
+                [url_hash],
+            ).fetchall()
+            url_list_text = [url[0] for url in url_list_text]
 
-    with TimeIt("image-only reverse page search"):
-        search = ReverseImageSearch(
-            storage=DB_PATH_OUTPUT,
-            search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
-            folder=SESSION_FILE_STORAGE_PATH,
-            upload=True,
-            mode="image",
-            htmlsession=html_session,
-            clf=logo_classifier,
-            clearbit=USE_CLEARBIT_LOGO_API,
-            tld=url_registered_domain,
-        )
-        search.handle_folder(session_file_path, url_hash)
+            # Handle results of search from above
+            if check_search_results(url_registered_domain, url_list_text):
+                main_logger.info(
+                    f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
+                )
 
-        # Get results from above search
-        url_list_img = db_conn_output.execute(
-            "SELECT DISTINCT result FROM search_result_image WHERE filepath = ?",
-            [url_hash],
-        ).fetchall()
-        url_list_img = [url[0] for url in url_list_img]
+                return ResultTypes.LEGITIMATE
 
-        # Handle results
-        if check_search_results(url_registered_domain, url_list_img):
-            main_logger.info(
-                f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
+        # No match through text, move on to image search
+
+        with TimeIt("image-only reverse page search"):
+            search = ReverseImageSearch(
+                storage=DB_PATH_OUTPUT,
+                search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
+                folder=SESSION_FILE_STORAGE_PATH,
+                upload=True,
+                mode="image",
+                htmlsession=html_session,
+                clf=logo_classifier,
+                clearbit=USE_CLEARBIT_LOGO_API,
+                tld=url_registered_domain,
             )
+            search.handle_folder(session_file_path, url_hash)
 
-            return ResultTypes.LEGITIMATE
+            # Get results from above search
+            url_list_img = db_conn_output.execute(
+                "SELECT DISTINCT result FROM search_result_image WHERE filepath = ?",
+                [url_hash],
+            ).fetchall()
+            url_list_img = [url[0] for url in url_list_img]
 
-    # No match through images, go on to image comparison per URL
-    with TimeIt("image comparisons"):
-        out_dir = os.path.join("compare_screens", url_hash)
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+            # Handle results
+            if check_search_results(url_registered_domain, url_list_img):
+                main_logger.info(
+                    f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
+                )
 
-        # Initialize web driver
-        options = Options()
-        options.add_argument("--headless")
+                return ResultTypes.LEGITIMATE
 
-        driver = webdriver.Chrome(options=options)
-        driver.set_window_size(screenshot_width, screenshot_height)
-        driver.set_page_load_timeout(WEB_DRIVER_PAGE_LOAD_TIMEOUT)
+        # No match through images, go on to image comparison per URL
+        with TimeIt("image comparisons"):
+            out_dir = os.path.join("compare_screens", url_hash)
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
 
-        # Check all found URLs
-        for index, resulturl in enumerate(url_list_text + url_list_img):
-            if check_image(driver, out_dir, index, session_file_path, resulturl):
-                # Match for found images, so conclude as phishing
-                driver.quit()
+            # Initialize web driver
+            options = Options()
+            options.add_argument("--headless")
 
-                main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
+            driver = webdriver.Chrome(options=options)
+            driver.set_window_size(screenshot_width, screenshot_height)
+            driver.set_page_load_timeout(WEB_DRIVER_PAGE_LOAD_TIMEOUT)
 
-                return ResultTypes.PHISHING
+            # Check all found URLs
+            for index, resulturl in enumerate(url_list_text + url_list_img):
+                if check_image(driver, out_dir, index, session_file_path, resulturl):
+                    # Match for found images, so conclude as phishing
+                    driver.quit()
 
-        driver.quit()
+                    main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
 
-    # If the inconclusive stems from google blocking:
-    #   e.g. blocked == True
-    #   result: inconclusive_blocked
+                    return ResultTypes.PHISHING
 
-    main_logger.info(f"[RESULT] Inconclusive, for url {url}")
+            driver.quit()
 
-    return ResultTypes.INCONCLUSIVE
+        # If the inconclusive stems from google blocking:
+        #   e.g. blocked == True
+        #   result: inconclusive_blocked
+
+        main_logger.info(f"[RESULT] Inconclusive, for url {url}")
+
+        return ResultTypes.INCONCLUSIVE
 
 
 def check_image(driver, out_dir, index, session_file_path, resulturl):

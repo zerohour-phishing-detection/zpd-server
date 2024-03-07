@@ -1,7 +1,6 @@
 import hashlib
 import os
 
-import methods.reverse_image_search_method as reverse_image_search_method
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
 from utils.decision import DecisionStrategies, decide
@@ -44,54 +43,48 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
     url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
     session = session_storage.get_session(data.uuid, data.url)
 
-    with TimeIt("cache check"):
-        # Check if URL is in cache or still processing
-        cache_result = session.get_state()
+    if not settings.bypass_cache:
+        with TimeIt("cache check"):
+            # Check if URL is in cache or still processing
+            cache_result = session.get_state()
 
-        if cache_result is not None:
-            # # Request is already in cache, use result from that (possibly waiting until it is finished)
-            # if cache_result.result == "processing":
-            #     time.sleep(4)  # TODO: oh god
+            if cache_result is not None:
 
-            main_logger.info(
-                f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
-            )
+                main_logger.info(
+                    f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
+                )
 
-            return DetectionResult(data.url, url_hash, cache_result.result)
+                return DetectionResult(data.url, url_hash, cache_result.state, cache_result.result)
 
     # Update the current state in the session storage
-    session.set_state(ResultTypes.PROCESSING, "started")
+    session.set_state(ResultTypes.PROCESSING.name, "STARTED")
 
     results = []
 
     for method in settings.detection_methods:
-        print(method)
-        if method == DetectionMethods.ReverseImageSearch:
-            results.append(
-                reverse_image_search_method.test(
-                    data.url, data.screenshot_url, data.uuid, data.pagetitle, ""
-                )
-            )
-        else:
-            main_logger.error(f"Method {method} not implemented yet.")
+        main_logger.info(f"Started running method {method.name}")
+        results.append(method.value.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, None))
 
     result = decide(settings.decision_strategy, results)
-    session.set_state(result, "done")
+    session.set_state(result.name, "DONE")
 
-    return DetectionResult(data.url, result, url_hash)
+    return DetectionResult(data.url, url_hash, "DONE", result.name)
 
 
 class DetectionSettings:
     detection_methods: list[DetectionMethods]
     decision_strategy: DecisionStrategies
+    bypass_cache: bool = False
 
     def __init__(
         self,
-        detection_methods: list[DetectionMethods],
-        decision_strategy: DecisionStrategies,
+        detection_methods: list[DetectionMethods] = [DetectionMethods.ReverseImageSearch],
+        decision_strategy: DecisionStrategies = DecisionStrategies.Majority,
+        bypass_cache: bool = False,
     ):
         self.detection_methods = detection_methods
         self.decision_strategy = decision_strategy
+        self.bypass_cache = bypass_cache
 
     @classmethod
     def from_json(cls, json):
@@ -102,6 +95,9 @@ class DetectionSettings:
         ]
 
         cls.decision_strategy = DecisionStrategies[json["decision-strategy"]]
+        
+        if "bypass-cache" in json:
+            cls.bypass_cache = json["bypass-cache"]
 
         return cls
 
