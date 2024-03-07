@@ -34,7 +34,7 @@ def _strict(results: list[ResultTypes]) -> ResultTypes:
         return ResultTypes.PHISHING
     elif results.count(ResultTypes.INCONCLUSIVE) > 0:
         return ResultTypes.INCONCLUSIVE
-    ResultTypes.LEGITIMATE
+    return ResultTypes.LEGITIMATE
 
 
 def _majority(results: list[ResultTypes]) -> ResultTypes:
