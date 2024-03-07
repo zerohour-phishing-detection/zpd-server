@@ -12,8 +12,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
-from engines.google import GoogleReverseImageSearchEngine
 from parsing import Parsing
+from search_engines.image.google import GoogleReverseImageSearchEngine
+from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.custom_logger import CustomLogger
 from utils.reverse_image_search import ReverseImageSearch
@@ -23,7 +24,7 @@ from utils.timing import TimeIt
 # Option for saving the taken screenshots
 SAVE_SCREENSHOT_FILES = False
 # Whether to use the Clearbit logo API (see https://clearbit.com/logo)
-USE_CLEARBIT_LOGO_API = True
+USE_CLEARBIT_LOGO_API = False
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
@@ -101,7 +102,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
         # Initiate text-only reverse image search instance
         search = ReverseImageSearch(
             storage=DB_PATH_OUTPUT,
-            search_engines=[GoogleReverseImageSearchEngine()],
+            reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+            text_search_engines=[GoogleTextSearchEngine()],
             folder=SESSION_FILE_STORAGE_PATH,
             upload=False,
             mode="text",
@@ -133,7 +135,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
     with TimeIt("image-only reverse page search"):
         search = ReverseImageSearch(
             storage=DB_PATH_OUTPUT,
-            search_engines=[GoogleReverseImageSearchEngine()],
+            reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+            text_search_engines=[GoogleTextSearchEngine()],
             folder=SESSION_FILE_STORAGE_PATH,
             upload=True,
             mode="image",
@@ -215,13 +218,13 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     emd, s_sim = None, None
     try:
         emd = cl.earth_movers_distance(path_a, path_b)
-    except Exception as err:
-        main_logger.error(err)
+    except Exception:
+        main_logger.exception('Error calculating earth_movers_distance')
 
     try:
         s_sim = cl.structural_sim(path_a, path_b)
-    except Exception as err:
-        main_logger.error(err)
+    except Exception:
+        main_logger.exception('Error calculating structural_sim')
 
     main_logger.info(f"Compared url '{resulturl}'")
     main_logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
