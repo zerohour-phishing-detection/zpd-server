@@ -77,5 +77,6 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-# Start Flask app, bind to all interfaces
-app.run(host="0.0.0.0")
+if __name__ == "__main__":
+    # Start Flask app, bind to all interfaces
+    app.run(host="0.0.0.0")
