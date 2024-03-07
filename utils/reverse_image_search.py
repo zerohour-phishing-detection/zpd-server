@@ -1,18 +1,22 @@
+import asyncio
+import itertools
 import os
 import sqlite3
 import time
 
 import numpy as np
 
-import searchengine
 import utils.region_detection as region_detection
 import utils.utils as ut
+from search_engines.image.base import ReverseImageSearchEngine
+from search_engines.text.base import TextSearchEngine
 from utils.custom_logger import CustomLogger
 from utils.region_detection import RegionData
 
 
 class ReverseImageSearch:
-    search_engines = None
+    text_search_engines: list[TextSearchEngine] = None
+    reverse_image_search_engines: list[ReverseImageSearchEngine] = None
     folder = None
     conn_storage = None
 
@@ -31,7 +35,8 @@ class ReverseImageSearch:
     def __init__(
         self,
         storage=None,
-        search_engine=None,
+        text_search_engines=None,
+        reverse_image_search_engines=None,
         folder=None,
         upload=True,
         mode=None,
@@ -44,8 +49,11 @@ class ReverseImageSearch:
         sqlite3.register_adapter(np.int64, lambda val: int(val))
         sqlite3.register_adapter(np.int32, lambda val: int(val))
 
-        self.search_engines = searchengine.SearchEngine().get_engine(search_engine)
+        # self._main_logger.info(f"Starting with IP: {ut.get_ip()}")
+
         self.conn_storage = sqlite3.connect(storage)
+        self.text_search_engines = text_search_engines
+        self.reverse_image_search_engines = reverse_image_search_engines
         self.folder = folder
         self.upload = upload
         self.mode = mode
@@ -61,7 +69,7 @@ class ReverseImageSearch:
         if not os.path.isfile(os.path.join(subfolder, "screen.png")):
             self._main_logger.error("No screen.png for: " + subfolder)
         else:
-            if not self._search_image_all(os.path.join(subfolder, "screen.png"), shahash):
+            if not asyncio.run(self._search_image_all(os.path.join(subfolder, "screen.png"), shahash)):
                 self.err += 1
 
     def setup_storage(self):
@@ -128,7 +136,7 @@ class ReverseImageSearch:
             self._main_logger.error("Failed to create table")
             self._main_logger.error(er)
 
-    def _search_image_all(self, img_path, sha_hash):
+    async def _search_image_all(self, img_path, sha_hash):
         # TODO: Add docstring
 
         self._main_logger.debug("Preparing for search info from: " + sha_hash)
@@ -155,15 +163,16 @@ class ReverseImageSearch:
         try:
             reverse_search_st = time.time()
 
-            for search_engine in self.search_engines:
-                self._rev_image_search(poi, search_engine, sha_hash)
+            for revimg_search_engine in self.reverse_image_search_engines:
+                await self._rev_image_search(poi, revimg_search_engine, sha_hash)
 
             reverse_search_spt = time.time()
             self._main_logger.warn(
                 f"Time elapsed for reverseImgSearch for {sha_hash} is {reverse_search_spt - reverse_search_st}"
             )
 
-            self._text_search(search_engine, search_terms, sha_hash)
+            for text_search_engine in self.text_search_engines:
+                self._text_search(text_search_engine, search_terms, sha_hash)
 
         except Exception as err:
             self._main_logger.error(err, exc_info=True)
@@ -274,7 +283,7 @@ class ReverseImageSearch:
             self._main_logger.error(err, exc_info=True)
             self.conn_storage.rollback()
 
-    def _rev_image_search(self, poi: list[RegionData], search_engine, sha_hash):
+    async def _rev_image_search(self, poi: list[RegionData], revimg_search_engine: ReverseImageSearchEngine, sha_hash):
         """
         Reverse image search and store 7 image matches results. Also clearbit functionality.
         """
@@ -285,26 +294,29 @@ class ReverseImageSearch:
                 f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
             ).fetchall()
 
+            # TODO: concurrency here
             for region_data in poi:
                 if (sha_hash, region_data.index, region_data.invert) not in topx:
                     continue
 
                 self._main_logger.info(f"Handling region {region_data.index}")
 
-                res = search_engine.get_n_image_matches(self.htmlsession, region_data.region, n=7)
+                res = itertools.islice(revimg_search_engine.query(region_data.region), 7)
+
                 count_entry = 0
 
                 for result in res:
                     self.conn_storage.execute(
                         "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                        (sha_hash, search_engine.name, region_data[1], count_entry, result),
+                        (sha_hash, revimg_search_engine.name, region_data.index, count_entry, result),
                     )
                     count_entry += 1
                     self.conn_storage.commit()
 
             if self.clearbit:
+                raise NotImplementedError()
                 self._main_logger.info("Handling clearbit logo")
-                res = search_engine.get_n_image_matches_clearbit(self.htmlsession, self.tld, n=7)
+                res = revimg_search_engine.get_n_image_matches_clearbit(self.htmlsession, self.tld, n=7)
                 count_entry = 0
 
                 for result in res:
@@ -315,7 +327,7 @@ class ReverseImageSearch:
                     count_entry += 1
                     self.conn_storage.commit()
 
-    def _text_search(self, search_engine, search_terms, sha_hash):
+    def _text_search(self, text_search_engine: TextSearchEngine, search_terms, sha_hash):
         """
         Look up and store 7 results of search_terms using the search engine.
         """
@@ -323,13 +335,17 @@ class ReverseImageSearch:
         # Searching based on text
         if (self.mode == "both" or self.mode == "text") and search_terms:
             self._main_logger.info(f"Started session: {self.htmlsession}")
-            res = search_engine.get_n_text_matches(self.htmlsession, search_terms, n=7)
+
             count_entry = 0
 
-            for result in res:
+            for result in text_search_engine.query(search_terms):
                 self.conn_storage.execute(
                     "INSERT INTO search_result_text (filepath, search_engine, search_terms, entry, result) VALUES (?, ?, ?, ?, ?)",
-                    (sha_hash, search_engine.name, search_terms, count_entry, result),
+                    (sha_hash, text_search_engine.name, search_terms, count_entry, result),
                 )
                 count_entry += 1
                 self.conn_storage.commit()
+
+                if count_entry >= 7:
+                    # Limit to 7
+                    break

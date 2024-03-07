@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from imageio import imread
 from scipy.stats import wasserstein_distance
+from skimage.metrics import structural_similarity
 from skimage.transform import resize
 
 ##
@@ -26,7 +27,7 @@ def get_img(path, norm_size=True, norm_exposure=False, norm_width=width, norm_he
     Prepare an image for image processing tasks
     """
     # flatten returns a 2d grayscale array
-    img = imread(path, as_gray=True).astype(int)
+    img = imread(path, mode='L')
     # resizing returns float vals 0:255; convert to ints for downstream tasks
     if norm_size:
         img = resize(img, (norm_height, norm_width), anti_aliasing=True, preserve_range=True)
@@ -100,8 +101,8 @@ def structural_sim(path_a, path_b):
     """
     img_a = get_img(path_a)
     img_b = get_img(path_b)
-    # TODO: check if this is useful and why it has an error
-    sim, _ = compare_ssim(img_a, img_b, full=True) # noqa: F821
+
+    sim, _ = structural_similarity(img_a, img_b, full=True, data_range=255)
     return sim
 
 

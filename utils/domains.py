@@ -11,17 +11,16 @@ def get_hostname(url):
 
 def get_san_names(domain):
     context = ssl.create_default_context()
-    with socket.create_connection((domain, 443), timeout=2) as sock:
+    with socket.create_connection((domain, 443), timeout=5) as sock:
         with context.wrap_socket(sock, server_hostname=domain) as ssock:
             cert = ssock.getpeercert()
-            san = {}
-            for type_, san in cert["subjectAltName"]:
-                if type_ in san:
-                    san[type_] = []
-                san[type_].append(san)
-
-            return san["DNS"]
-
+            sans = {}
+            for type_, san in cert['subjectAltName']:
+                if type_ not in sans:
+                    sans[type_] = []
+                sans[type_].append(san)
+            
+            return sans['DNS']
 
 def get_registered_domain(hostname):
     """

@@ -1,3 +1,5 @@
+import asyncio
+import concurrent.futures
 import hashlib
 import os
 import sqlite3
@@ -8,8 +10,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
-from engines.google import GoogleReverseImageSearchEngine
 from parsing import Parsing
+from search_engines.image.google import GoogleReverseImageSearchEngine
+from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.custom_logger import CustomLogger
 from utils.result import ResultTypes
@@ -18,20 +21,14 @@ from utils.timing import TimeIt
 
 # Option for saving the taken screenshots
 SAVE_SCREENSHOT_FILES = False
-
 # Whether to use the Clearbit logo API (see https://clearbit.com/logo)
-USE_CLEARBIT_LOGO_API = True
+USE_CLEARBIT_LOGO_API = False
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
-
 # Database path for the operational output (?)
 DB_PATH_OUTPUT = "db/output_operational.db"
-
-# TODO: Remove this from here
 # Database path for the sessions
-if not os.path.isdir("db"):
-    os.mkdir("db")
 
 # Page loading timeout for web driver
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
@@ -47,9 +44,9 @@ html_session.browser  # TODO why is this here
 # The logo classifier, deserialized from file
 logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib")
 
-class ReverseImageSearchMethod:
 
-    def test(self, url, screenshot_url, uuid, pagetitle, image64) -> "ResultTypes":
+class ReverseImageSearchMethod:
+    def test(self, url, screenshot_url, uuid, pagetitle, image64) -> ResultTypes:
         url_domain = domains.get_hostname(url)
         url_registered_domain = domains.get_registered_domain(url_domain)
 
@@ -75,7 +72,8 @@ class ReverseImageSearchMethod:
             # Initiate text-only reverse image search instance
             search = ReverseImageSearch(
                 storage=DB_PATH_OUTPUT,
-                search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
+                reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+                text_search_engines=[GoogleTextSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
                 upload=False,
                 mode="text",
@@ -93,19 +91,18 @@ class ReverseImageSearchMethod:
             url_list_text = [url[0] for url in url_list_text]
 
             # Handle results of search from above
-            if check_search_results(url_registered_domain, url_list_text):
+            if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
                 main_logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
                 )
 
                 return ResultTypes.LEGITIMATE
 
-        # No match through text, move on to image search
-
         with TimeIt("image-only reverse page search"):
             search = ReverseImageSearch(
                 storage=DB_PATH_OUTPUT,
-                search_engine=list(GoogleReverseImageSearchEngine().identifiers())[0],
+                reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+                text_search_engines=[GoogleTextSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
                 upload=True,
                 mode="image",
@@ -124,7 +121,7 @@ class ReverseImageSearchMethod:
             url_list_img = [url[0] for url in url_list_img]
 
             # Handle results
-            if check_search_results(url_registered_domain, url_list_img):
+            if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
                 main_logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
                 )
@@ -154,7 +151,6 @@ class ReverseImageSearchMethod:
                     main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
 
                     return ResultTypes.PHISHING
-
             driver.quit()
 
         # If the inconclusive stems from google blocking:
@@ -181,13 +177,13 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     emd, s_sim = None, None
     try:
         emd = cl.earth_movers_distance(path_a, path_b)
-    except Exception as err:
-        main_logger.error(err)
+    except Exception:
+        main_logger.exception("Error calculating earth_movers_distance")
 
     try:
         s_sim = cl.structural_sim(path_a, path_b)
-    except Exception as err:
-        main_logger.error(err)
+    except Exception:
+        main_logger.exception("Error calculating structural_sim")
 
     main_logger.info(f"Compared url '{resulturl}'")
     main_logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
@@ -198,26 +194,40 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     return False
 
 
-def check_search_results(url_registered_domain, found_urls) -> bool:
+async def check_search_results(url_registered_domain, found_urls) -> bool:
     with TimeIt("SAN domain check"):
-        for url in found_urls:
-            # For each found URL, get the hostname
-            domain = domains.get_hostname(url)
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            loop = asyncio.get_running_loop()
+            coros = []
+            for url in found_urls:
+                coros.append(
+                    loop.run_in_executor(pool, lambda: check_url(url_registered_domain, url))
+                )
 
-            # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
-            try:
-                san_names = domains.get_san_names(domain)
-            except Exception:
-                main_logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
-                continue
-
-            main_logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
-
-            for hostname in [domain] + san_names:
-                # Check if any of the domains found matches the input domain
-                registered_domain = domains.get_registered_domain(hostname)
-                if url_registered_domain == registered_domain:
+            for coro in asyncio.as_completed(coros):
+                if await coro:
                     return True
 
         # If no match, no results yet
         return False
+
+
+def check_url(url_registered_domain, url) -> bool:
+    # For each found URL, get the hostname
+    domain = domains.get_hostname(url)
+
+    # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
+    try:
+        san_names = domains.get_san_names(domain)
+    except Exception:
+        main_logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
+        return
+
+    main_logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
+
+    for hostname in [domain] + san_names:
+        # Check if any of the domains found matches the input domain
+        registered_domain = domains.get_registered_domain(hostname)
+        if url_registered_domain == registered_domain:
+            return True
+    return False

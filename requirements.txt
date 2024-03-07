@@ -12,7 +12,6 @@ cssselect==1.2.0
 cycler==0.10.0
 decorator==4.4.2
 exceptiongroup==1.2.0
-fake-useragent==1.4.0
 filelock==3.13.1
 Flask==3.0.0
 fonttools==4.49.0
@@ -28,7 +27,7 @@ lazy_loader==0.3
 lxml==5.1.0
 MarkupSafe==2.1.5
 matplotlib==3.8.2
-nest-asyncio==1.5.5
+nest-asyncio==1.6.0
 networkx==3.2.1
 numpy==1.26.1
 opencv-python==4.9.0.80

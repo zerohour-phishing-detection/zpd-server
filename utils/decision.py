@@ -41,10 +41,8 @@ def _majority(results: list[ResultTypes]) -> ResultTypes:
     """
     Given a list of results it computes the majority decision.
     """
-
-    print(results)
+    
     diff = results.count(ResultTypes.PHISHING) - results.count(ResultTypes.LEGITIMATE)
-    print(diff)
     return ResultTypes(max(-1, min(1, diff)))
 
 
