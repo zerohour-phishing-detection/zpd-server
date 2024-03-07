@@ -1,6 +1,4 @@
 import asyncio
-
-# import concurrent.futures
 import itertools
 import os
 import sqlite3
@@ -296,10 +294,7 @@ class ReverseImageSearch:
                 f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
             ).fetchall()
 
-            # Commented out implementation of concurrency
-            # with concurrent.futures.ThreadPoolExecutor() as pool:
-            # loop = asyncio.get_running_loop()
-            # awaits = []
+            # TODO: concurrency here
             for region_data in poi:
                 if (sha_hash, region_data.index, region_data.invert) not in topx:
                     continue
