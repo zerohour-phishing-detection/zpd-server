@@ -15,7 +15,6 @@ class DetectionMethod(ABC):
 class TestMethod(DetectionMethod):
     def test(self, *args, **kwargs):
         rand = random.randint(-1, 1)
-        print(f"Test method result: {rand}")
         return ResultTypes(rand)
 
 class DetectionMethods(Enum):

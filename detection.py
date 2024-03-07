@@ -27,13 +27,13 @@ main_logger = CustomLogger().main_logger
 
 
 # DEPRECATED
-def test(data: "DetectionData") -> "DetectionResult":
-    return test_new(
+def test_old(data: "DetectionData") -> "DetectionResult":
+    return test(
         data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategies.Majority)
     )
 
 
-def test_new(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
+def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
     main_logger.info(f"""
 
 ##########################################################
@@ -54,7 +54,7 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
                     f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
                 )
 
-                return DetectionResult(data.url, url_hash, cache_result.state, cache_result.result)
+                return DetectionResult(data.url, url_hash, cache_result.state, ResultTypes[cache_result.result])
 
     # Update the current state in the session storage
     session.set_state(ResultTypes.PROCESSING.name, "STARTED")
@@ -68,7 +68,7 @@ def test_new(data: "DetectionData", settings: "DetectionSettings") -> "Detection
     result = decide(settings.decision_strategy, results)
     session.set_state(result.name, "DONE")
 
-    return DetectionResult(data.url, url_hash, "DONE", result.name)
+    return DetectionResult(data.url, url_hash, "DONE", result)
 
 
 class DetectionSettings:

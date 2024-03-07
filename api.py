@@ -39,9 +39,9 @@ def shutdown_server():
 def check_url():
     json = request.get_json()
 
-    res = detection.test(DetectionData.from_json(json))
+    res = detection.test_old(DetectionData.from_json(json))
 
-    return res.to_json_str()
+    return res.to_json_str_old()
 
 
 @app.route("/api/v1/url_new", methods=["POST"])
@@ -50,7 +50,7 @@ def check_url_new():
     json_data = json["data"]
     json_settings = json["settings"]
 
-    res = detection.test_new(
+    res = detection.test(
         DetectionData.from_json(json_data), DetectionSettings.from_json(json_settings)
     )
 
