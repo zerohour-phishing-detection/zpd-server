@@ -1,6 +1,5 @@
+import json
 from enum import Enum
-
-from flask import jsonify
 
 
 class ResultTypes(Enum):
@@ -41,10 +40,10 @@ class DetectionResult:
         obj = [
             {"url": self.url, "status": self.status, "result": self.result.name, "hash": self.url_hash}
         ]
-        return jsonify(obj)
+        return json.dumps(obj)
 
     # DEPRECATED
     def to_json_str_old(self):
         old_result = ResultTypes.to_old(self.result)
         obj = [{"url": self.url, "status": old_result, "sha1": self.url_hash}]
-        return jsonify(obj)
+        return json.dumps(obj)
