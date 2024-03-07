@@ -237,16 +237,16 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
 
 async def check_search_results(url_registered_domain, found_urls) -> "DetectionResult":
     with TimeIt("SAN domain check"):
-
         with concurrent.futures.ThreadPoolExecutor() as pool:
             loop = asyncio.get_running_loop()
-            awaits = []
+            coros = []
             for url in found_urls:
-                awaits.append(loop.run_in_executor(pool, lambda: check_url(url_registered_domain, url)))
-            results = await asyncio.gather(*awaits)
-            print(results)
-            if (True in results):
-                return True
+                coros.append(loop.run_in_executor(pool, lambda: check_url(url_registered_domain, url)))
+
+            for coro in asyncio.as_completed(coros):
+                if await coro:
+                    return True
+
         # If no match, no results yet
         return False
     
