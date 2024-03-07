@@ -14,7 +14,6 @@ from utils import domains
 from utils.custom_logger import CustomLogger
 from utils.result import ResultTypes
 from utils.reverse_image_search import ReverseImageSearch
-from utils.sessions import SessionStorage
 from utils.timing import TimeIt
 
 # Option for saving the taken screenshots
@@ -31,15 +30,12 @@ DB_PATH_OUTPUT = "db/output_operational.db"
 
 # TODO: Remove this from here
 # Database path for the sessions
-DB_PATH_SESSIONS = "db/sessions.db"
 if not os.path.isdir("db"):
     os.mkdir("db")
 
 # Page loading timeout for web driver
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 
-# The storage interface for the sessions
-session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 
 # The main logger for the whole program, singleton
 main_logger = CustomLogger().main_logger
