@@ -3,7 +3,7 @@ import os
 
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DecisionStrategy, decide
+from utils.decision import DECISION_STRATEGIES
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
@@ -29,7 +29,7 @@ main_logger = CustomLogger().main_logger
 # DEPRECATED
 def test_old(data: "DetectionData") -> "DetectionResult":
     return test(
-        data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategy.MAJORITY)
+        data, DetectionSettings()
     )
 
 
@@ -68,7 +68,7 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
             method.value.run(data.url, data.screenshot_url, data.uuid, data.pagetitle, None)
         )
 
-    result = decide(settings.decision_strategy, results)
+    result = DECISION_STRATEGIES[settings.decision_strategy].decide(settings.decision_strategy, results)
     session.set_state(result.name, "DONE")
 
     return DetectionResult(data.url, url_hash, "DONE", result)
@@ -76,13 +76,13 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
 
 class DetectionSettings:
     detection_methods: list[DetectionMethods]
-    decision_strategy: DecisionStrategy
-    bypass_cache: bool = False
+    decision_strategy: str
+    bypass_cache: bool
 
     def __init__(
         self,
         detection_methods: list[DetectionMethods] = [DetectionMethods.ReverseImageSearch],
-        decision_strategy: DecisionStrategy = DecisionStrategy.MAJORITY,
+        decision_strategy: str = "Majority",
         bypass_cache: bool = False,
     ):
         self.detection_methods = detection_methods
@@ -91,19 +91,16 @@ class DetectionSettings:
 
     @staticmethod
     def from_json(json):
-        detection_methods = [
-            DetectionMethods[method]
-            for method in json["detection-methods"]
-            if method in DetectionMethods.__members__
-        ]
+        detection_methods = json["detection-methods"]
 
-        decision_strategy = DecisionStrategy[json["decision-strategy"]]
+        decision_strategy = json["decision-strategy"]
 
-        bypass_cache = False
+        
         if "bypass-cache" in json:
             bypass_cache = json["bypass-cache"]
+            return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
 
-        return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
+        return DetectionSettings(detection_methods, decision_strategy)
 
 
 class DetectionData:

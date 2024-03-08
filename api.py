@@ -9,7 +9,7 @@ import detection
 from detection import DetectionData, DetectionSettings
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DecisionStrategy
+from utils.decision import DECISION_STRATEGIES
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -71,14 +71,15 @@ def get_url_state():
     return jsonify(result)
 
 
-@app.route("/api/v1/methods", methods=["GET"])
-def get_available_methods():
+@app.route("/api/v1/settings", methods=["GET"])
+def get_available_settings():
     result = [
         {
-            "decision-strategy": DecisionStrategy._member_names_,
+            "decision-strategy": list(DECISION_STRATEGIES.keys()),
             "detection-methods": DetectionMethods._member_names_,
         }
     ]
+    print(list(DECISION_STRATEGIES.items())[0])
     return jsonify(result)
 
 
