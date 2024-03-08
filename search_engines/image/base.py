@@ -1,8 +1,9 @@
+import logging
 from typing import Iterator
 
 import numpy as np
 
-from utils.custom_logger import CustomLogger
+from utils.logging import main_logger
 
 
 class ReverseImageSearchEngine:
@@ -10,12 +11,11 @@ class ReverseImageSearchEngine:
     A class that allows you to make online reverse image search queries.
     """
     name: str
-
-    main_logger = None
+    logger: logging.Logger
 
     def __init__(self, name):
         self.name = name
-        self.main_logger = CustomLogger().main_logger
+        self.logger = main_logger.getChild('reverse_image_search_engine.' + name)
 
     def query(self, region: np.ndarray) -> Iterator[str]:
         """

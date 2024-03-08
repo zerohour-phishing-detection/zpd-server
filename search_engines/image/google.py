@@ -43,7 +43,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         # Add User Agent header
         headers = {"user-agent": USER_AGENT}
 
-        self.main_logger.info("Sending request to Google Lens")
+        self.logger.info("Sending request to Google Lens")
         try:
             # Make POST request
             html_res: HTMLResponse = self.htmlsession.post(
@@ -51,7 +51,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
             )
 
             if html_res.status_code != 200:
-                self.main_logger.error(f"Google Lens returned status code {html_res.status_code}")
+                self.logger.error(f"Google Lens returned status code {html_res.status_code}")
         except Exception as e:
             raise IOError("Error while sending request to Google Lens") from e
 
@@ -89,7 +89,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         if self.htmlsession is not None:
             return
 
-        self.main_logger.info("Starting HTML session")
+        self.logger.info("Starting HTML session")
         htmlsession = HTMLSession()
 
         accept_all_cookies(htmlsession)
@@ -118,7 +118,7 @@ class GoogleReverseImageSearchEngine(ReverseImageSearchEngine):
         # Extract URLs from query results
         extracted_urls = self.extract_search_result_urls(html)
 
-        self.main_logger.info(
+        self.logger.info(
             f"Reverse image search query gave {len(extracted_urls)} results so far"
         )
 
