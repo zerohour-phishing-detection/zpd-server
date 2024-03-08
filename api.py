@@ -7,7 +7,7 @@ from flask import Flask, jsonify, render_template, request
 
 import detection
 from detection import DetectionData, DetectionSettings
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # __import__('IPython').embed()

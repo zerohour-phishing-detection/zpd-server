@@ -1,6 +1,6 @@
 import time
 
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 
 logger = main_logger.getChild('utils.timing')
 

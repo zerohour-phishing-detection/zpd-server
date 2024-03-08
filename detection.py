@@ -1,7 +1,7 @@
 import hashlib
 import os
 
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage

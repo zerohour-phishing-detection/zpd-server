@@ -10,7 +10,7 @@ import utils.region_detection as region_detection
 import utils.utils as ut
 from search_engines.image.base import ReverseImageSearchEngine
 from search_engines.text.base import TextSearchEngine
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 from utils.region_detection import RegionData
 
 

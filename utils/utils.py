@@ -8,7 +8,7 @@ import time
 from bs4 import BeautifulSoup
 
 # Setup logging
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 
 logger = main_logger
 

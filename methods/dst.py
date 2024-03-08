@@ -15,7 +15,7 @@ from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 from utils.result import ResultType
 from utils.reverse_image_search import ReverseImageSearch
 from utils.timing import TimeIt

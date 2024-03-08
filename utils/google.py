@@ -1,6 +1,6 @@
 from requests_html import HTMLResponse, HTMLSession
 
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 
 BLOCK_STR = "Our systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?"
 

@@ -8,7 +8,7 @@ import numpy as np
 import scipy.stats as ss
 from pywt import dwt2
 
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 
 logger = main_logger.getChild('utils.region_detection')
 

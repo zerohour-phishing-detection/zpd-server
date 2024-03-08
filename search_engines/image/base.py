@@ -3,7 +3,7 @@ from typing import Iterator
 
 import numpy as np
 
-from utils.custom_logger import main_logger
+from utils.logging import main_logger
 
 
 class ReverseImageSearchEngine:
