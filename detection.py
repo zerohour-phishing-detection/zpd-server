@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import itertools
 import os
 import sqlite3
 import time
@@ -12,6 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
+import utils.utils as ut
 from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
@@ -100,25 +102,16 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
     # Perform text search of the screenshot
     with TimeIt("text-only reverse page search"):
         # Initiate text-only reverse image search instance
-        search = ReverseImageSearch(
-            storage=DB_PATH_OUTPUT,
-            reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-            text_search_engines=[GoogleTextSearchEngine()],
-            folder=SESSION_FILE_STORAGE_PATH,
-            upload=False,
-            mode="text",
-            htmlsession=html_session,
-            clf=logo_classifier,
-        )
+        html_file = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash, "page.html")
+        page_title = ut.get_page_title(html_file)
+        if page_title is None:
+            return
 
-        search.handle_folder(session_file_path, url_hash)
+        search_engine = GoogleTextSearchEngine()
+        url_list_text = list(itertools.islice(search_engine.query(page_title), 7))
 
-        # Get result from the above search
-        url_list_text = db_conn_output.execute(
-            "SELECT DISTINCT result FROM search_result_text WHERE filepath = ?",
-            [url_hash],
-        ).fetchall()
-        url_list_text = [url[0] for url in url_list_text]
+        main_logger.info(f'Found {len(url_list_text)} URLs')
+        main_logger.debug(f'URLs found: {url_list_text}')
 
         # Handle results of search from above
         if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
@@ -136,10 +129,8 @@ def test(url, screenshot_url, uuid, pagetitle, image64) -> "DetectionResult":
         search = ReverseImageSearch(
             storage=DB_PATH_OUTPUT,
             reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-            text_search_engines=[GoogleTextSearchEngine()],
             folder=SESSION_FILE_STORAGE_PATH,
             upload=True,
-            mode="image",
             htmlsession=html_session,
             clf=logo_classifier,
             clearbit=USE_CLEARBIT_LOGO_API,

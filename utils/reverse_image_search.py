@@ -7,15 +7,12 @@ import time
 import numpy as np
 
 import utils.region_detection as region_detection
-import utils.utils as ut
 from search_engines.image.base import ReverseImageSearchEngine
-from search_engines.text.base import TextSearchEngine
 from utils.custom_logger import CustomLogger
 from utils.region_detection import RegionData
 
 
 class ReverseImageSearch:
-    text_search_engines: list[TextSearchEngine] = None
     reverse_image_search_engines: list[ReverseImageSearchEngine] = None
     folder = None
     conn_storage = None
@@ -24,7 +21,6 @@ class ReverseImageSearch:
     err = 0
     total = None
     start = None
-    mode = None
     htmlsession = None
     clf_logo = None
     clearbit = False
@@ -35,11 +31,9 @@ class ReverseImageSearch:
     def __init__(
         self,
         storage=None,
-        text_search_engines=None,
         reverse_image_search_engines=None,
         folder=None,
         upload=True,
-        mode=None,
         htmlsession=None,
         clf=None,
         clearbit=False,
@@ -52,11 +46,9 @@ class ReverseImageSearch:
         # self._main_logger.info(f"Starting with IP: {ut.get_ip()}")
 
         self.conn_storage = sqlite3.connect(storage)
-        self.text_search_engines = text_search_engines
         self.reverse_image_search_engines = reverse_image_search_engines
         self.folder = folder
         self.upload = upload
-        self.mode = mode
         self.htmlsession = htmlsession
         self.clf_logo = clf
         self.clearbit = clearbit
@@ -141,24 +133,17 @@ class ReverseImageSearch:
 
         self._main_logger.debug("Preparing for search info from: " + sha_hash)
         self._main_logger.info(f"Search mode: {self.mode}")
+        
+        # Get all points on interest in two passthroughs to get both black on white and white on black.
 
-        search_terms = None
-        if self.mode == "both" or self.mode == "text":
-            search_terms = ut.get_search_term(self.folder, sha_hash)
-            self._main_logger.info(f"Search terms found: {search_terms}")
+        region_find_st = time.time()
 
-        poi = None
-        if self.mode == "both" or self.mode == "image":
-            # Get all points on interest in two passthroughs to get both black on white and white on black.
+        poi = self._region_find(img_path, sha_hash)
 
-            region_find_st = time.time()
-
-            poi = self._region_find(img_path, sha_hash)
-
-            region_find_spt = time.time()
-            self._main_logger.warn(
-                f"Time elapsed for regionFind for {sha_hash} is {region_find_spt - region_find_st}"
-            )
+        region_find_spt = time.time()
+        self._main_logger.warn(
+            f"Time elapsed for regionFind for {sha_hash} is {region_find_spt - region_find_st}"
+        )
 
         try:
             reverse_search_st = time.time()
@@ -170,9 +155,6 @@ class ReverseImageSearch:
             self._main_logger.warn(
                 f"Time elapsed for reverseImgSearch for {sha_hash} is {reverse_search_spt - reverse_search_st}"
             )
-
-            for text_search_engine in self.text_search_engines:
-                self._text_search(text_search_engine, search_terms, sha_hash)
 
         except Exception as err:
             self._main_logger.error(err, exc_info=True)
@@ -289,63 +271,39 @@ class ReverseImageSearch:
         """
 
         # Reverse image searching the regions using the search engine
-        if self.mode == "both" or self.mode == "image":
-            topx = self.conn_storage.execute(
-                f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
-            ).fetchall()
+        topx = self.conn_storage.execute(
+            f"select filepath, region, invert from region_info where filepath = '{sha_hash}' and label <> 'clearbit' ORDER BY logo_prob DESC LIMIT 3"
+        ).fetchall()
 
-            # TODO: concurrency here
-            for region_data in poi:
-                if (sha_hash, region_data.index, region_data.invert) not in topx:
-                    continue
+        # TODO: concurrency here
+        for region_data in poi:
+            if (sha_hash, region_data.index, region_data.invert) not in topx:
+                continue
 
-                self._main_logger.info(f"Handling region {region_data.index}")
+            self._main_logger.info(f"Handling region {region_data.index}")
 
-                res = itertools.islice(revimg_search_engine.query(region_data.region), 7)
-
-                count_entry = 0
-
-                for result in res:
-                    self.conn_storage.execute(
-                        "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                        (sha_hash, revimg_search_engine.name, region_data.index, count_entry, result),
-                    )
-                    count_entry += 1
-                    self.conn_storage.commit()
-
-            if self.clearbit:
-                raise NotImplementedError()
-                self._main_logger.info("Handling clearbit logo")
-                res = revimg_search_engine.get_n_image_matches_clearbit(self.htmlsession, self.tld, n=7)
-                count_entry = 0
-
-                for result in res:
-                    self.conn_storage.execute(
-                        "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                        (sha_hash, "clearbit", 9999, count_entry, result),
-                    )
-                    count_entry += 1
-                    self.conn_storage.commit()
-
-    def _text_search(self, text_search_engine: TextSearchEngine, search_terms, sha_hash):
-        """
-        Look up and store 7 results of search_terms using the search engine.
-        """
-
-        # Searching based on text
-        if (self.mode == "both" or self.mode == "text") and search_terms:
-            self._main_logger.info(f"Started session: {self.htmlsession}")
+            res = itertools.islice(revimg_search_engine.query(region_data.region), 7)
 
             count_entry = 0
 
-            for result in text_search_engine.query(search_terms):
+            for result in res:
                 self.conn_storage.execute(
-                    "INSERT INTO search_result_text (filepath, search_engine, search_terms, entry, result) VALUES (?, ?, ?, ?, ?)",
-                    (sha_hash, text_search_engine.name, search_terms, count_entry, result),
+                    "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
+                    (sha_hash, revimg_search_engine.name, region_data.index, count_entry, result),
                 )
                 count_entry += 1
                 self.conn_storage.commit()
 
-                if count_entry >= 7:
-                    # Limit to 7
-                    break
+        if self.clearbit:
+            raise NotImplementedError()
+            self._main_logger.info("Handling clearbit logo")
+            res = revimg_search_engine.get_n_image_matches_clearbit(self.htmlsession, self.tld, n=7)
+            count_entry = 0
+
+            for result in res:
+                self.conn_storage.execute(
+                    "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
+                    (sha_hash, "clearbit", 9999, count_entry, result),
+                )
+                count_entry += 1
+                self.conn_storage.commit()
