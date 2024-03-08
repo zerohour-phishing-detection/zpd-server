@@ -7,7 +7,7 @@ main_logger: logging.Logger = logging.getLogger('zpd')
 The main logger to be used by the program.
 """
 
-if not os.path.exists("log"):
+if not os.path.exists("logs"):
     os.makedirs("log")
 
 # Allow all log levels
