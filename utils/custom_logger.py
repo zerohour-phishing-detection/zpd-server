@@ -29,20 +29,22 @@ def setup():
     console_handler.setFormatter(formatter_c)
     main_logger.addHandler(console_handler)
 
+    now = time.time()
+
     # Add main file log handler
-    file_handler = logging.FileHandler(f"log/python-{time.time()}.log", mode="w")
+    file_handler = logging.FileHandler(f"log/python-{now}.log", mode="w")
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter_f)
     main_logger.addHandler(file_handler)
 
     # Add extra file log handler at ERROR level
-    file_handler_error = logging.FileHandler(f"log/error-{time.time()}.log", mode="w")
+    file_handler_error = logging.FileHandler(f"log/error-{now}.log", mode="w")
     file_handler_error.setLevel(logging.ERROR)
     file_handler_error.setFormatter(formatter_f)
     main_logger.addHandler(file_handler_error)
 
     # Add extra file log handler at DEBUG level
-    file_handler_debug = logging.FileHandler(f"log/debug-{time.time()}.log", mode="w")
+    file_handler_debug = logging.FileHandler(f"log/debug-{now}.log", mode="w")
     file_handler_debug.setLevel(logging.DEBUG)
     file_handler_debug.setFormatter(formatter_f)
     main_logger.addHandler(file_handler_debug)
