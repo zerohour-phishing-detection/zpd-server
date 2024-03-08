@@ -36,7 +36,7 @@ def shutdown_server():
 
 # DEPRECATED
 @app.route("/api/v1/url", methods=["POST"])
-def check_url():
+def check_url_old():
     json = request.get_json()
 
     res = detection.test_old(DetectionData.from_json(json))
@@ -44,8 +44,8 @@ def check_url():
     return res.to_json_str_old()
 
 
-@app.route("/api/v1/url_new", methods=["POST"])
-def check_url_new():
+@app.route("/api/v2/url", methods=["POST"])
+def check_url():
     json = request.get_json()
     json_data = json["data"]
     json_settings = json["settings"]

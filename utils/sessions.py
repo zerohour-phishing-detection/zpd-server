@@ -3,8 +3,6 @@ from datetime import datetime
 
 import tldextract
 
-from utils.result import ResultTypes
-
 
 # TODO make abstract? can allow for different kinds of storage (in-memory, sqlite database file, mysql database, etc)
 class SessionStorage:
@@ -95,7 +93,7 @@ class SessionStorage:
 
 
 class State:
-    result: ResultTypes
+    result: str
     state: str
     timestamp = None
 

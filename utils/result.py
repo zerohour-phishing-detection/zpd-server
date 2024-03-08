@@ -8,8 +8,9 @@ class ResultTypes(Enum):
     INCONCLUSIVE = 0
     PHISHING = 1
 
-    @classmethod
-    def to_old(cls, result: "ResultTypes"):
+    # DEPRECATED
+    @staticmethod
+    def to_old(result: "ResultTypes"):
         if result == ResultTypes.PROCESSING:
             return "processing"
         if result == ResultTypes.LEGITIMATE:
@@ -37,9 +38,13 @@ class DetectionResult:
 
     def to_json_str(self):
         # TODO rename status to phase (over the whole codebase)
-        obj = [
-            {"url": self.url, "status": self.status, "result": self.result.name, "hash": self.url_hash}
-        ]
+        obj = {
+            "url": self.url,
+            "status": self.status,
+            "result": self.result.name,
+            "hash": self.url_hash,
+        }
+
         return json.dumps(obj)
 
     # DEPRECATED
