@@ -16,7 +16,7 @@ nest_asyncio.apply()
 # The storage interface for the sessions
 session_storage = detection.session_storage
 
-# The main logger for the whole program, singleton
+# Instantiate a logger for this HTTP API
 logger = main_logger.getChild('api')
 
 # Initiate Flask app

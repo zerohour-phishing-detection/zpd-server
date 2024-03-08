@@ -21,7 +21,7 @@ if not os.path.isdir("db"):
 # The storage interface for the sessions
 session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 
-# The main logger for the whole program, singleton
+# Instantiate a logger for the phishing detection
 logger = main_logger.getChild('detection')
 
 

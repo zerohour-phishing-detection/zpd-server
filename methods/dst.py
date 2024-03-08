@@ -35,7 +35,7 @@ DB_PATH_OUTPUT = "db/output_operational.db"
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 
 
-# The main logger for the whole program, singleton
+# Instantiate a logger for this detection method
 logger = main_logger.getChild('methods.dst')
 
 # The HTTP + HTML session to use for reverse image search
