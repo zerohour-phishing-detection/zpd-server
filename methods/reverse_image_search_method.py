@@ -15,7 +15,7 @@ from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.custom_logger import CustomLogger
-from utils.result import ResultTypes
+from utils.result import ResultType
 from utils.reverse_image_search import ReverseImageSearch
 from utils.timing import TimeIt
 
@@ -46,7 +46,7 @@ logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib
 
 
 class ReverseImageSearchMethod:
-    def test(self, url, screenshot_url, uuid, pagetitle, image64) -> ResultTypes:
+    def test(self, url, screenshot_url, uuid, pagetitle, image64) -> ResultType:
         url_domain = domains.get_hostname(url)
         url_registered_domain = domains.get_registered_domain(url_domain)
 
@@ -96,7 +96,7 @@ class ReverseImageSearchMethod:
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
                 )
 
-                return ResultTypes.LEGITIMATE
+                return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
             search = ReverseImageSearch(
@@ -126,7 +126,7 @@ class ReverseImageSearchMethod:
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
                 )
 
-                return ResultTypes.LEGITIMATE
+                return ResultType.LEGITIMATE
 
         # No match through images, go on to image comparison per URL
         with TimeIt("image comparisons"):
@@ -150,7 +150,7 @@ class ReverseImageSearchMethod:
 
                     main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
 
-                    return ResultTypes.PHISHING
+                    return ResultType.PHISHING
             driver.quit()
 
         # If the inconclusive stems from google blocking:
@@ -159,7 +159,7 @@ class ReverseImageSearchMethod:
 
         main_logger.info(f"[RESULT] Inconclusive, for url {url}")
 
-        return ResultTypes.INCONCLUSIVE
+        return ResultType.INCONCLUSIVE
 
 
 def check_image(driver, out_dir, index, session_file_path, resulturl):

@@ -3,8 +3,8 @@ import os
 
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DecisionStrategies, decide
-from utils.result import DetectionResult, ResultTypes
+from utils.decision import DecisionStrategy, decide
+from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
 
@@ -29,7 +29,7 @@ main_logger = CustomLogger().main_logger
 # DEPRECATED
 def test_old(data: "DetectionData") -> "DetectionResult":
     return test(
-        data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategies.Majority)
+        data, DetectionSettings([DetectionMethods.ReverseImageSearch], DecisionStrategy.MAJORITY)
     )
 
 
@@ -49,21 +49,24 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
             cache_result = session.get_state()
 
             if cache_result is not None:
-
                 main_logger.info(
                     f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
                 )
 
-                return DetectionResult(data.url, url_hash, cache_result.state, ResultTypes[cache_result.result])
+                return DetectionResult(
+                    data.url, url_hash, cache_result.state, ResultType[cache_result.result]
+                )
 
     # Update the current state in the session storage
-    session.set_state(ResultTypes.PROCESSING.name, "STARTED")
+    session.set_state(ResultType.PROCESSING.name, "STARTED")
 
     results = []
 
     for method in settings.detection_methods:
         main_logger.info(f"Started running method {method.name}")
-        results.append(method.value.test(data.url, data.screenshot_url, data.uuid, data.pagetitle, None))
+        results.append(
+            method.value.run(data.url, data.screenshot_url, data.uuid, data.pagetitle, None)
+        )
 
     result = decide(settings.decision_strategy, results)
     session.set_state(result.name, "DONE")
@@ -73,33 +76,34 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
 
 class DetectionSettings:
     detection_methods: list[DetectionMethods]
-    decision_strategy: DecisionStrategies
+    decision_strategy: DecisionStrategy
     bypass_cache: bool = False
 
     def __init__(
         self,
         detection_methods: list[DetectionMethods] = [DetectionMethods.ReverseImageSearch],
-        decision_strategy: DecisionStrategies = DecisionStrategies.Majority,
+        decision_strategy: DecisionStrategy = DecisionStrategy.MAJORITY,
         bypass_cache: bool = False,
     ):
         self.detection_methods = detection_methods
         self.decision_strategy = decision_strategy
         self.bypass_cache = bypass_cache
 
-    @classmethod
-    def from_json(cls, json):
-        cls.detection_methods = [
+    @staticmethod
+    def from_json(json):
+        detection_methods = [
             DetectionMethods[method]
             for method in json["detection-methods"]
             if method in DetectionMethods.__members__
         ]
 
-        cls.decision_strategy = DecisionStrategies[json["decision-strategy"]]
-        
-        if "bypass-cache" in json:
-            cls.bypass_cache = json["bypass-cache"]
+        decision_strategy = DecisionStrategy[json["decision-strategy"]]
 
-        return cls
+        bypass_cache = False
+        if "bypass-cache" in json:
+            bypass_cache = json["bypass-cache"]
+
+        return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
 
 
 class DetectionData:
@@ -116,18 +120,18 @@ class DetectionData:
         self.uuid = uuid
         self.pagetitle = pagetitle
 
-    @classmethod
-    def from_json(cls, json):
-        cls.url = json["URL"]
-        cls.screenshot_url = json["URL"]
+    @staticmethod
+    def from_json(json):
+        url = json["URL"]
+        screenshot_url = json["URL"]
 
         # extra json field for evaluation purposes
         # the hash computed in the DB is the this one
         if "phishURL" in json:  # TODO: only allow this on a testing environment, not prod
-            cls.url = json["phishURL"]
-            main_logger.info(f"Real URL changed to phishURL: {cls.url}\n")
+            url = json["phishURL"]
+            main_logger.info(f"Real URL changed to phishURL: {url}\n")
 
-        cls.pagetitle = json["pagetitle"]
-        cls.uuid = json["uuid"]
+        pagetitle = json["pagetitle"]
+        uuid = json["uuid"]
 
-        return cls
+        return DetectionData(url, screenshot_url, uuid, pagetitle)

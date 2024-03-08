@@ -1,60 +1,60 @@
 from enum import Enum, auto
 
-from utils.result import ResultTypes
+from utils.result import ResultType
 
 
-class DecisionStrategies(Enum):
-    Strict = auto()
-    Majority = auto()
-    Unanimous = auto()
+class DecisionStrategy(Enum):
+    STRICT = auto()
+    MAJORITY = auto()
+    UNANIMOUS = auto()
 
 
-def decide(strategy: DecisionStrategies, results: list[ResultTypes]) -> ResultTypes:
+def decide(strategy: DecisionStrategy, results: list[ResultType]) -> ResultType:
     """
     Given a decision strategy and a list of results, it computes the decision.
     """
 
     match strategy:
-        case DecisionStrategies.Strict:
+        case DecisionStrategy.STRICT:
             return _strict(results)
-        case DecisionStrategies.Majority:
+        case DecisionStrategy.MAJORITY:
             return _majority(results)
-        case DecisionStrategies.Unanimous:
+        case DecisionStrategy.UNANIMOUS:
             return _unanimous(results)
         case _:
             raise ValueError("Unknown decision strategy!")
 
 
-def _strict(results: list[ResultTypes]) -> ResultTypes:
+def _strict(results: list[ResultType]) -> ResultType:
     """
     Given a list of results it computes the strict decision.
     """
 
-    if results.count(ResultTypes.PHISHING) > 0:
-        return ResultTypes.PHISHING
-    elif results.count(ResultTypes.INCONCLUSIVE) > 0:
-        return ResultTypes.INCONCLUSIVE
-    return ResultTypes.LEGITIMATE
+    if results.count(ResultType.PHISHING) > 0:
+        return ResultType.PHISHING
+    elif results.count(ResultType.INCONCLUSIVE) > 0:
+        return ResultType.INCONCLUSIVE
+    return ResultType.LEGITIMATE
 
 
-def _majority(results: list[ResultTypes]) -> ResultTypes:
+def _majority(results: list[ResultType]) -> ResultType:
     """
     Given a list of results it computes the majority decision.
     """
     
-    diff = results.count(ResultTypes.PHISHING) - results.count(ResultTypes.LEGITIMATE)
-    return ResultTypes(max(-1, min(1, diff)))
+    diff = results.count(ResultType.PHISHING) - results.count(ResultType.LEGITIMATE)
+    return ResultType(max(-1, min(1, diff)))
 
 
-def _unanimous(results: list) -> ResultTypes:
+def _unanimous(results: list) -> ResultType:
     """
     Given a list of results it computes the unanimous decision.
     """
 
-    length = len(results) - results.count(ResultTypes.INCONCLUSIVE)
-    diff = results.count(ResultTypes.PHISHING) - results.count(ResultTypes.LEGITIMATE)
+    length = len(results) - results.count(ResultType.INCONCLUSIVE)
+    diff = results.count(ResultType.PHISHING) - results.count(ResultType.LEGITIMATE)
 
     if abs(diff) != length:
-        return ResultTypes.INCONCLUSIVE
+        return ResultType.INCONCLUSIVE
 
-    return ResultTypes(max(-1, min(1, diff)))
+    return ResultType(max(-1, min(1, diff)))

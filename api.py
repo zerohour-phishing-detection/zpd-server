@@ -9,7 +9,7 @@ import detection
 from detection import DetectionData, DetectionSettings
 from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DecisionStrategies
+from utils.decision import DecisionStrategy
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -75,7 +75,7 @@ def get_url_state():
 def get_available_methods():
     result = [
         {
-            "decision-strategy": DecisionStrategies._member_names_,
+            "decision-strategy": DecisionStrategy._member_names_,
             "detection-methods": DetectionMethods._member_names_,
         }
     ]

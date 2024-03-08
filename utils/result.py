@@ -2,7 +2,7 @@ import json
 from enum import Enum
 
 
-class ResultTypes(Enum):
+class ResultType(Enum):
     PROCESSING = -2
     LEGITIMATE = -1
     INCONCLUSIVE = 0
@@ -10,14 +10,14 @@ class ResultTypes(Enum):
 
     # DEPRECATED
     @staticmethod
-    def to_old(result: "ResultTypes"):
-        if result == ResultTypes.PROCESSING:
+    def to_old(result: "ResultType"):
+        if result == ResultType.PROCESSING:
             return "processing"
-        if result == ResultTypes.LEGITIMATE:
+        if result == ResultType.LEGITIMATE:
             return "not phishing"
-        if result == ResultTypes.INCONCLUSIVE:
+        if result == ResultType.INCONCLUSIVE:
             return "inconclusive"
-        if result == ResultTypes.PHISHING:
+        if result == ResultType.PHISHING:
             return "phishing"
         raise ValueError("Unknown result type")
 
@@ -27,10 +27,10 @@ class DetectionResult:
     url: str
     url_hash: str
 
-    result: ResultTypes
+    result: ResultType
     status: str
 
-    def __init__(self, url: str, url_hash: str, status: str, result: ResultTypes):
+    def __init__(self, url: str, url_hash: str, status: str, result: ResultType):
         self.url = url
         self.url_hash = url_hash
         self.status = status
@@ -49,6 +49,6 @@ class DetectionResult:
 
     # DEPRECATED
     def to_json_str_old(self):
-        old_result = ResultTypes.to_old(self.result)
+        old_result = ResultType.to_old(self.result)
         obj = [{"url": self.url, "status": old_result, "sha1": self.url_hash}]
         return json.dumps(obj)
