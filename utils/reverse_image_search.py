@@ -8,7 +8,6 @@ import numpy as np
 
 import utils.region_detection as region_detection
 from search_engines.image.base import ReverseImageSearchEngine
-from search_engines.text.base import TextSearchEngine
 from utils.logging import main_logger
 from utils.region_detection import RegionData
 
