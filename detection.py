@@ -82,7 +82,7 @@ class DetectionSettings:
         self,
         # TODO fix this
         detection_methods: list[str] = ["dst"],
-        decision_strategy: str = "Majority",
+        decision_strategy: str = "majority",
         bypass_cache: bool = False,
     ):
         self.detection_methods = detection_methods
