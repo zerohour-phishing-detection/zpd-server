@@ -1,8 +1,8 @@
 import time
 
-from utils.custom_logger import CustomLogger
+from utils.logging import main_logger
 
-main_logger = CustomLogger().main_logger
+logger = main_logger.getChild('utils.timing')
 
 
 class TimeIt:
@@ -33,7 +33,7 @@ class TimeIt:
         if unit == "ms":
             diff *= 1000
 
-        main_logger.info("[TIMING] %s took %.3f%s", title, diff, unit)
+        logger.info("[TIMING] %s took %.3f%s", title, diff, unit)
 
 
 if __name__ == "__main__":

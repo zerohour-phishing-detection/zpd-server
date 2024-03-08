@@ -1,7 +1,7 @@
 import hashlib
 import os
 
-from utils.custom_logger import CustomLogger
+from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
@@ -21,8 +21,8 @@ if not os.path.isdir("db"):
 # The storage interface for the sessions
 session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 
-# The main logger for the whole program, singleton
-main_logger = CustomLogger().main_logger
+# Instantiate a logger for the phishing detection
+logger = main_logger.getChild('detection')
 
 
 # DEPRECATED
@@ -33,7 +33,7 @@ def test_old(data: "DetectionData") -> "DetectionResult":
 
 
 def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
-    main_logger.info(f"""
+    logger.info(f"""
 
 ##########################################################
 ##### Request received for URL:\t{data.url}
@@ -48,7 +48,7 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
             cache_result = session.get_state()
 
             if cache_result is not None:
-                main_logger.info(
+                logger.info(
                     f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
                 )
 
@@ -62,7 +62,7 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
     results = []
 
     for method in settings.detection_methods:
-        main_logger.info(f"Started running method {method}")
+        logger.info(f"Started running method {method}")
         results.append(
             DETECTION_METHODS[method].run(data.url, data.screenshot_url, data.uuid, data.pagetitle)
         )
@@ -126,7 +126,7 @@ class DetectionData:
         # the hash computed in the DB is the this one
         if "phishURL" in json:  # TODO: only allow this on a testing environment, not prod
             url = json["phishURL"]
-            main_logger.info(f"Real URL changed to phishURL: {url}\n")
+            logger.info(f"Real URL changed to phishURL: {url}\n")
 
         pagetitle = json["pagetitle"]
         uuid = json["uuid"]

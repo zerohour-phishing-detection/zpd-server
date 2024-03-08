@@ -7,7 +7,7 @@ from flask import Flask, jsonify, render_template, request
 
 import detection
 from detection import DetectionData, DetectionSettings
-from utils.custom_logger import CustomLogger
+from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # __import__('IPython').embed()
@@ -16,8 +16,8 @@ nest_asyncio.apply()
 # The storage interface for the sessions
 session_storage = detection.session_storage
 
-# The main logger for the whole program, singleton
-main_logger = CustomLogger().main_logger
+# Instantiate a logger for this HTTP API
+logger = main_logger.getChild('api')
 
 # Initiate Flask app
 app = Flask(__name__)

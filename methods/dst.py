@@ -15,7 +15,7 @@ from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
-from utils.custom_logger import CustomLogger
+from utils.logging import main_logger
 from utils.result import ResultType
 from utils.reverse_image_search import ReverseImageSearch
 from utils.timing import TimeIt
@@ -35,8 +35,8 @@ DB_PATH_OUTPUT = "db/output_operational.db"
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 
 
-# The main logger for the whole program, singleton
-main_logger = CustomLogger().main_logger
+# Instantiate a logger for this detection method
+logger = main_logger.getChild('methods.dst')
 
 # The HTTP + HTML session to use for reverse image search
 html_session = HTMLSession()
@@ -93,7 +93,7 @@ class DST(DetectionMethod):
 
             # Handle results of search from above
             if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
-                main_logger.info(
+                logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
                 )
 
@@ -123,7 +123,7 @@ class DST(DetectionMethod):
 
             # Handle results
             if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
-                main_logger.info(
+                logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
                 )
 
@@ -149,7 +149,7 @@ class DST(DetectionMethod):
                     # Match for found images, so conclude as phishing
                     driver.quit()
 
-                    main_logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
+                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
 
                     return ResultType.PHISHING
             driver.quit()
@@ -158,7 +158,7 @@ class DST(DetectionMethod):
         #   e.g. blocked == True
         #   result: inconclusive_blocked
 
-        main_logger.info(f"[RESULT] Inconclusive, for url {url}")
+        logger.info(f"[RESULT] Inconclusive, for url {url}")
 
         return ResultType.INCONCLUSIVE
 
@@ -179,15 +179,15 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     try:
         emd = cl.earth_movers_distance(path_a, path_b)
     except Exception:
-        main_logger.exception("Error calculating earth_movers_distance")
+        logger.exception("Error calculating earth_movers_distance")
 
     try:
         s_sim = cl.structural_sim(path_a, path_b)
     except Exception:
-        main_logger.exception("Error calculating structural_sim")
+        logger.exception("Error calculating structural_sim")
 
-    main_logger.info(f"Compared url '{resulturl}'")
-    main_logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
+    logger.info(f"Compared url '{resulturl}'")
+    logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
 
     if ((emd < 0.001) and (s_sim > 0.70)) or ((emd < 0.002) and (s_sim > 0.80)):
         return True
@@ -221,10 +221,10 @@ def check_url(url_registered_domain, url) -> bool:
     try:
         san_names = domains.get_san_names(domain)
     except Exception:
-        main_logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
+        logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
         return
 
-    main_logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
+    logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
 
     for hostname in [domain] + san_names:
         # Check if any of the domains found matches the input domain

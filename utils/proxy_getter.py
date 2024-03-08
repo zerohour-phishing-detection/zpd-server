@@ -2,11 +2,11 @@ import threading
 
 import proxyscrape
 
-from utils.custom_logger import CustomLogger
+from utils.logging import main_logger
 
 
 class ProxyGetter:
-    _main_logger = CustomLogger().main_logger
+    _logger = main_logger.getChild('utils.proxy_getter')
     _instance = None
 
     collector = proxyscrape.create_collector("default", "https")
@@ -30,4 +30,4 @@ class ProxyGetter:
         - US because near default exit point of current VPN.
         """
         self.proxy = self.collector.get_proxy({"code": "us", "anonymous": True})
-        self._main_logger.info(f"Set proxy to: {self.proxy.host}")
+        self._logger.info(f"Set proxy to: {self.proxy.host}")
