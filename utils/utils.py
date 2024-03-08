@@ -48,7 +48,7 @@ def time_string(time_start, i, n):
 
 
 def setstatus(status):
-    to_file("log/status.txt", status)
+    to_file("logs/status.txt", status)
 
 
 def fix_entries(search, def_db):
