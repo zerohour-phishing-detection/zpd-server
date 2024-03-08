@@ -6,7 +6,9 @@ import nest_asyncio
 from flask import Flask, jsonify, render_template, request
 
 import detection
+from detection import DetectionData, DetectionSettings
 from utils.custom_logger import main_logger
+from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -31,28 +33,25 @@ def shutdown_server():
     os._exit(0)
 
 
+# DEPRECATED
 @app.route("/api/v1/url", methods=["POST"])
-def check_url():
+def check_url_old():
     json = request.get_json()
 
-    # main_logger.debug("Received JSON: " + str(json))
-    # main_logger.warn("Received JSON: " + str(json))
-    # main_logger.warn("Received JSON: " + str(json["URL"]))
+    res = detection.test_old(DetectionData.from_json(json))
 
-    url = json["URL"]
-    screenshot_url = url  # the actual URL to screenshot
+    return res.to_json_str_old()
 
-    # extra json field for evaluation purposes
-    # the hash computed in the DB is the this one
-    if "phishURL" in json:  # TODO only allow this on a testing environment, not prod
-        url = json["phishURL"]
-        logger.info(f"Real URL changed to phishURL: {url}\n")
 
-    uuid = json["uuid"]
-    pagetitle = json["pagetitle"]
-    image64 = json["image64"]
+@app.route("/api/v2/url", methods=["POST"])
+def check_url():
+    json = request.get_json()
+    json_data = json["data"]
+    json_settings = json["settings"]
 
-    res = detection.test(url, screenshot_url, uuid, pagetitle, image64)
+    res = detection.test(
+        DetectionData.from_json(json_data), DetectionSettings.from_json(json_settings)
+    )
 
     return res.to_json_str()
 
@@ -67,6 +66,19 @@ def get_url_state():
     status = session.get_state()
 
     result = [{"status": status.result, "state": status.state}]
+
+    return jsonify(result)
+
+
+@app.route("/api/v1/capabilities", methods=["GET"])
+def get_available_capabilities():
+    result = [
+        {
+            "decision-strategy": list(DECISION_STRATEGIES.keys()),
+            "detection-methods": list(DETECTION_METHODS.keys()),
+        }
+    ]
+    print(list(DECISION_STRATEGIES.items())[0])
     return jsonify(result)
 
 

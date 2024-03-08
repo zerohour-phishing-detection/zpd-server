@@ -7,7 +7,7 @@ from selenium.webdriver.chrome.options import Options
 
 
 class Parsing:
-    # "files/" + sha1hash(URL)
+    # "files/" + hash(URL)
     store = None
     clientscreen = None
 
@@ -29,28 +29,17 @@ class Parsing:
             options = Options()
             options.add_argument("--headless")
 
-            # driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-            # replaces the above with a fixed ChromeDriver
             driver = webdriver.Chrome(options=options)
             driver.set_window_size(1280, 768)
             driver.get(target_url)
             driver.save_screenshot(store + "/screen.png")
             driver.quit()
 
-        # rd.findregions(store + "/screen.png", draw=True, recursivedraw=True, highlightname="high-1")
         self.create_html(store, title)
 
     def create_png(self, store_path, image):
         with open(store_path + "/screen.png", "wb") as f:
             f.write(base64.decodebytes(image))
-        # screen = Image.open(store_path + "/screen_uncropped.png")
-        # width, height = screen.size
-        # if width > 1280:
-        #    r = 1280
-        # if height > 768:
-        #    b = 768
-        # screen1 = screen.crop((0, 0, r, b))
-        # screen1.save(store_path + "screen.png", format="png")
 
     def create_html(self, store_path, title):
         with open(store_path + "/page.html", "w") as g:
