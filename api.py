@@ -7,9 +7,8 @@ from flask import Flask, jsonify, render_template, request
 
 import detection
 from detection import DetectionData, DetectionSettings
-from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DECISION_STRATEGIES
+from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # __import__('IPython').embed()
 nest_asyncio.apply()
@@ -71,12 +70,12 @@ def get_url_state():
     return jsonify(result)
 
 
-@app.route("/api/v1/settings", methods=["GET"])
-def get_available_settings():
+@app.route("/api/v1/capabilities", methods=["GET"])
+def get_available_capabilities():
     result = [
         {
             "decision-strategy": list(DECISION_STRATEGIES.keys()),
-            "detection-methods": DetectionMethods._member_names_,
+            "detection-methods": list(DETECTION_METHODS.keys()),
         }
     ]
     print(list(DECISION_STRATEGIES.items())[0])

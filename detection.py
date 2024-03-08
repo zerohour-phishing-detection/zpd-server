@@ -1,9 +1,8 @@
 import hashlib
 import os
 
-from methods.detection_methods import DetectionMethods
 from utils.custom_logger import CustomLogger
-from utils.decision import DECISION_STRATEGIES
+from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
 from utils.timing import TimeIt
@@ -63,25 +62,26 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
     results = []
 
     for method in settings.detection_methods:
-        main_logger.info(f"Started running method {method.name}")
+        main_logger.info(f"Started running method {method}")
         results.append(
-            method.value.run(data.url, data.screenshot_url, data.uuid, data.pagetitle, None)
+            DETECTION_METHODS[method].run(data.url, data.screenshot_url, data.uuid, data.pagetitle)
         )
 
-    result = DECISION_STRATEGIES[settings.decision_strategy].decide(settings.decision_strategy, results)
+    result = DECISION_STRATEGIES[settings.decision_strategy].decide(results)
     session.set_state(result.name, "DONE")
 
     return DetectionResult(data.url, url_hash, "DONE", result)
 
 
 class DetectionSettings:
-    detection_methods: list[DetectionMethods]
+    detection_methods: list[str]
     decision_strategy: str
     bypass_cache: bool
 
     def __init__(
         self,
-        detection_methods: list[DetectionMethods] = [DetectionMethods.ReverseImageSearch],
+        # TODO fix this
+        detection_methods: list[str] = ["dst"],
         decision_strategy: str = "Majority",
         bypass_cache: bool = False,
     ):

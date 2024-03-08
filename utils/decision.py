@@ -49,10 +49,3 @@ class Unanimous(DecisionStrategy):
             return ResultType.INCONCLUSIVE
 
         return ResultType(max(-1, min(1, diff)))
-
-
-DECISION_STRATEGIES: dict[str, DecisionStrategy] = {
-    "strict": Strict(),
-    "majority": Majority(),
-    "unanimous": Unanimous(),
-}

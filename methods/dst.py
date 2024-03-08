@@ -10,6 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
+from methods import DetectionMethod
 from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
@@ -45,8 +46,8 @@ html_session.browser  # TODO why is this here
 logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib")
 
 
-class ReverseImageSearchMethod:
-    def test(self, url, screenshot_url, uuid, pagetitle, image64) -> ResultType:
+class DST(DetectionMethod):
+    def run(self, url, screenshot_url, uuid, pagetitle, image64 = "") -> ResultType:
         url_domain = domains.get_hostname(url)
         url_registered_domain = domains.get_registered_domain(url_domain)
 
