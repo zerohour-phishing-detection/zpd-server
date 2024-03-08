@@ -27,7 +27,7 @@ def get_img(path, norm_size=True, norm_exposure=False, norm_width=width, norm_he
     Prepare an image for image processing tasks
     """
     # flatten returns a 2d grayscale array
-    img = imread(path, mode='L')
+    img = imread(path, mode="L")
     # resizing returns float vals 0:255; convert to ints for downstream tasks
     if norm_size:
         img = resize(img, (norm_height, norm_width), anti_aliasing=True, preserve_range=True)
