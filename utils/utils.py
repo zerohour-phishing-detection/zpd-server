@@ -2,7 +2,6 @@
 Just some misc util functions that might be universally used
 """
 
-import os
 import time
 
 from bs4 import BeautifulSoup

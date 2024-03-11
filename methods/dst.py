@@ -3,7 +3,6 @@ import concurrent.futures
 import hashlib
 import itertools
 import os
-import sqlite3
 
 import joblib
 from requests_html import HTMLSession
@@ -94,11 +93,10 @@ class DST(DetectionMethod):
             search = ReverseImageSearch(
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
-                upload=True,
                 htmlsession=html_session,
                 clf=logo_classifier
             )
-            url_list_img = search.handle_folder(session_file_path, url_hash)
+            url_list_img = search.handle_folder(session_file_path)
             print(url_list_img)
 
             # Handle results
