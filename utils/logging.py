@@ -8,7 +8,7 @@ The main logger to be used by the program.
 """
 
 if not os.path.exists("logs"):
-    os.makedirs("log")
+    os.makedirs("logs")
 
 # Allow all log levels
 main_logger.setLevel(logging.DEBUG)
@@ -32,19 +32,19 @@ def setup():
     now = time.time()
 
     # Add main file log handler
-    file_handler = logging.FileHandler(f"log/python-{now}.log", mode="w")
+    file_handler = logging.FileHandler(f"logs/python-{now}.log", mode="w")
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter_f)
     main_logger.addHandler(file_handler)
 
     # Add extra file log handler at ERROR level
-    file_handler_error = logging.FileHandler(f"log/error-{now}.log", mode="w")
+    file_handler_error = logging.FileHandler(f"logs/error-{now}.log", mode="w")
     file_handler_error.setLevel(logging.ERROR)
     file_handler_error.setFormatter(formatter_f)
     main_logger.addHandler(file_handler_error)
 
     # Add extra file log handler at DEBUG level
-    file_handler_debug = logging.FileHandler(f"log/debug-{now}.log", mode="w")
+    file_handler_debug = logging.FileHandler(f"logs/debug-{now}.log", mode="w")
     file_handler_debug.setLevel(logging.DEBUG)
     file_handler_debug.setFormatter(formatter_f)
     main_logger.addHandler(file_handler_debug)
