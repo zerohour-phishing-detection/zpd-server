@@ -12,7 +12,7 @@ from utils.timing import TimeIt
 
 class LogoFinder:
     """
-    Finds logos within an image, and their origins.
+    Finds logos within an image, and their URL origins.
     """
     reverse_image_search_engines: list[ReverseImageSearchEngine] = None
     folder: str = None
@@ -69,9 +69,11 @@ class LogoFinder:
             The list of logo-probability combinations: each region with their probability of being a logo.
         """
 
+        # First, find the regions in the image
         regions, _ = region_detection.find_regions(img_path)
         self._logger.info(f"Found {len(regions)} regions")
 
+        # Then, calculate the logo probability for each of the regions
         try:
             self._logger.debug(
                 "(filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert)"
@@ -79,6 +81,7 @@ class LogoFinder:
 
             region_probas = []
             for region_data in regions:
+                # Submit region to the classifiers
                 height, width, _ = region_data.region.shape
                 self._logger.debug(
                     f"({region_data.index}, {width}, {height}, {region_data.x}, {region_data.y}, {region_data.unique_colors_count}, {region_data.pct}, {region_data.hierarchy[2]}, {region_data.hierarchy[3]})"
@@ -123,14 +126,16 @@ class LogoFinder:
         for region_data, logo_proba in logo_probas:
             self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
 
-            count = 0
+            searchres_count = 0
             for res in revimg_search_engine.query(region_data.region):
                 yield res
-                
-                count += 1
-                if count >= 7:
+
+                # Limit to the first 7 search results
+                searchres_count += 1
+                if searchres_count >= 7:
                     break
 
+            # Limit to the top 3 regions
             region_count += 1
             if region_count >= 3:
                 break
