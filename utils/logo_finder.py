@@ -1,4 +1,3 @@
-import asyncio
 from collections.abc import AsyncIterator
 
 from requests_html import HTMLSession
@@ -11,7 +10,10 @@ from utils.region_detection import RegionData
 from utils.timing import TimeIt
 
 
-class ReverseImageSearch:
+class LogoFinder:
+    """
+    Finds logos within an image, and their origins.
+    """
     reverse_image_search_engines: list[ReverseImageSearchEngine] = None
     folder: str = None
     htmlsession: HTMLSession = None
@@ -31,38 +33,40 @@ class ReverseImageSearch:
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
-    def search_image(self, img_path: str) -> list[str]:
-        async def search_images():
-            results = []
-            async for x in self._search_image_all(img_path):
-                results.append(x)
-            return results
+    async def run(self, img_path: str) -> AsyncIterator[str]:
+        """
+        Attempts to find logos (and their origins) in the image specified by the given path.
 
-        return asyncio.run(search_images())
-
-    async def _search_image_all(self, img_path: str) -> AsyncIterator[str]:
-        # TODO: Add docstring
+        Yields
+        ------
+        str
+            The URL where it found the logo back online.
+        """
 
         self._logger.debug("Preparing for search info")
-        
-        # Get all points on interest in two passthroughs to get both black on white and white on black.
 
+        # Finds the regions in the image
         with TimeIt('Region finding'):
-            region_predictions = self._region_find(img_path)
+            region_predictions = self.find_logo_probas(img_path)
 
-        try:
-            with TimeIt('reverse image search'):
-                for revimg_search_engine in self.reverse_image_search_engines:
-                    async for res in self._rev_image_search(region_predictions, revimg_search_engine):
+        for revimg_search_engine in self.reverse_image_search_engines:
+            # For each reverse image search engine, try to find the origin of each logo region
+            with TimeIt(f'Logo reverse image search using {revimg_search_engine.name}'):
+                try:
+                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine):
                         yield res
 
-        except Exception as err:
-            self._logger.error(err, exc_info=True)
+                except Exception:
+                    self._logger.error(f'Error while finding logo origins using search engine {revimg_search_engine.name}', exc_info=True)
 
-    def _region_find(self, img_path: str) -> list[tuple[RegionData, float]]:
+    def find_logo_probas(self, img_path: str) -> list[tuple[RegionData, float]]:
         """
-        Find regions in an image, put the regions with attributes in the storage of self.
-        Calculate the probabilities of a region being a logo and store it.
+        Finds regions in an image, and calculates the probability of being a logo per region.
+
+        Returns
+        -------
+        list[tuple[RegionData, float]]
+            The list of logo-probability combinations: each region with their probability of being a logo.
         """
 
         regions, _ = region_detection.find_regions(img_path)
@@ -106,17 +110,17 @@ class ReverseImageSearch:
         except Exception:
             self._logger.error(f'Exception while finding regions for img_path {img_path}', exc_info=True)
 
-    async def _rev_image_search(self, region_predictions: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
+    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
         """
-        Reverse image search and store 7 image matches results.
+        Find the origin of the 3 highest-logo-probability regions, using the given search engine.
         """
 
         # Sort region predictions by logo probability, in descending order
-        region_predictions.sort(key=lambda t: t[1], reverse=True)
+        logo_probas.sort(key=lambda t: t[1], reverse=True)
 
         region_count = 0
         # TODO: concurrency here
-        for region_data, logo_proba in region_predictions:
+        for region_data, logo_proba in logo_probas:
             self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
 
             count = 0

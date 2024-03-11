@@ -17,8 +17,8 @@ from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.logging import main_logger
+from utils.logo_finder import LogoFinder
 from utils.result import ResultType
-from utils.reverse_image_search import ReverseImageSearch
 from utils.timing import TimeIt
 
 # Option for saving the taken screenshots
@@ -90,13 +90,19 @@ class DST(DetectionMethod):
                 return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
-            search = ReverseImageSearch(
+            logo_finder = LogoFinder(
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
                 htmlsession=html_session,
                 clf=logo_classifier
             )
-            url_list_img = search.search_image(os.path.join(session_file_path, 'screen.png'))
+
+            async def search_images():
+                results = []
+                async for x in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
+                    results.append(x)
+                return results
+            url_list_img = asyncio.run(search_images())
             print(url_list_img) # TODO remove
 
             # Handle results
