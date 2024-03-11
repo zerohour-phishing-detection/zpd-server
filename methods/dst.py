@@ -68,8 +68,6 @@ class DST(DetectionMethod):
             )
             screenshot_width, screenshot_height = parsing.get_size()
 
-        db_conn_output = sqlite3.connect(DB_PATH_OUTPUT)
-
         # Perform text search of the screenshot
         with TimeIt("text-only reverse page search"):
             # Initiate text-only reverse image search instance
@@ -96,23 +94,13 @@ class DST(DetectionMethod):
             search = ReverseImageSearch(
                 storage=DB_PATH_OUTPUT,
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-                text_search_engines=[GoogleTextSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
                 upload=True,
-                mode="image",
                 htmlsession=html_session,
-                clf=logo_classifier,
-                clearbit=USE_CLEARBIT_LOGO_API,
-                tld=url_registered_domain,
+                clf=logo_classifier
             )
-            search.handle_folder(session_file_path, url_hash)
-
-            # Get results from above search
-            url_list_img = db_conn_output.execute(
-                "SELECT DISTINCT result FROM search_result_image WHERE filepath = ?",
-                [url_hash],
-            ).fetchall()
-            url_list_img = [url[0] for url in url_list_img]
+            url_list_img = search.handle_folder(session_file_path, url_hash)
+            print(url_list_img)
 
             # Handle results
             if asyncio.run(check_search_results(url_registered_domain, url_list_img)):

@@ -1,15 +1,16 @@
 import asyncio
-import itertools
 import os
 import sqlite3
-import time
+from collections.abc import AsyncIterator
 
 import numpy as np
+from requests_html import HTMLSession
 
 import utils.region_detection as region_detection
 from search_engines.image.base import ReverseImageSearchEngine
 from utils.logging import main_logger
 from utils.region_detection import RegionData
+from utils.timing import TimeIt
 
 
 class ReverseImageSearch:
@@ -23,27 +24,21 @@ class ReverseImageSearch:
     start = None
     htmlsession = None
     clf_logo = None
-    clearbit = False
-    tld = None
 
     _logger = main_logger.getChild('utils.reverse_image_search')
 
     def __init__(
         self,
-        storage=None,
-        reverse_image_search_engines=None,
-        folder=None,
-        upload=True,
-        htmlsession=None,
-        clf=None,
-        clearbit=False,
-        tld=None,
+        storage: str = None,
+        reverse_image_search_engines: list[ReverseImageSearchEngine] = None,
+        folder: str = None,
+        upload: bool = True,
+        htmlsession: HTMLSession = None,
+        clf=None
     ):
         # To avoid ints becoming blobs upon storing:
         sqlite3.register_adapter(np.int64, lambda val: int(val))
         sqlite3.register_adapter(np.int32, lambda val: int(val))
-
-        # self._main_logger.info(f"Starting with IP: {ut.get_ip()}")
 
         self.conn_storage = sqlite3.connect(storage)
         self.reverse_image_search_engines = reverse_image_search_engines
@@ -51,41 +46,28 @@ class ReverseImageSearch:
         self.upload = upload
         self.htmlsession = htmlsession
         self.clf_logo = clf
-        self.clearbit = clearbit
-        self.tld = tld
         self.setup_storage()
 
-    def handle_folder(self, subfolder, shahash):
+    def handle_folder(self, subfolder: str, shahash: str) -> list[str] | None:
         self._logger.info("Opening folder: " + subfolder)
 
         if not os.path.isfile(os.path.join(subfolder, "screen.png")):
             self._logger.error("No screen.png for: " + subfolder)
         else:
-            if not asyncio.run(self._search_image_all(os.path.join(subfolder, "screen.png"), shahash)):
+            async def search_images():
+                results = []
+                async for x in self._search_image_all(os.path.join(subfolder, "screen.png"), shahash):
+                    results.append(x)
+                return results
+            res = asyncio.run(search_images())
+            
+            if res is None:
                 self.err += 1
+            else:
+                return res
 
     def setup_storage(self):
         try:
-            sql_q_db = """
-                CREATE TABLE IF NOT EXISTS "search_result_image" (
-                            "filepath" string,
-                            "search_engine" string,
-                            "region" integer,
-                            "entry"	integer,
-                            "result" string
-                        );"""
-            self.conn_storage.execute(sql_q_db)
-
-            sql_q_db = """
-                CREATE TABLE IF NOT EXISTS "search_result_text" (
-                            "filepath" string,
-                            "search_engine" string,
-                            "search_terms" string,
-                            "entry" integer,
-                            "result" string
-                        );"""
-            self.conn_storage.execute(sql_q_db)
-
             sql_q_db = """
                 CREATE TABLE IF NOT EXISTS "region_info" (
                             "filepath" string,
@@ -128,42 +110,27 @@ class ReverseImageSearch:
             self._logger.error("Failed to create table")
             self._logger.error(er)
 
-    async def _search_image_all(self, img_path, sha_hash):
+    async def _search_image_all(self, img_path: str, sha_hash: str) -> AsyncIterator[str]:
         # TODO: Add docstring
 
         self._logger.debug("Preparing for search info from: " + sha_hash)
-        self._logger.info(f"Search mode: {self.mode}")
         
         # Get all points on interest in two passthroughs to get both black on white and white on black.
 
-        region_find_st = time.time()
-
-        poi = self._region_find(img_path, sha_hash)
-
-        region_find_spt = time.time()
-        self._logger.warn(
-            f"Time elapsed for regionFind for {sha_hash} is {region_find_spt - region_find_st}"
-        )
+        with TimeIt('Region finding'):
+            poi = self._region_find(img_path, sha_hash)
 
         try:
-            reverse_search_st = time.time()
-
-            for revimg_search_engine in self.reverse_image_search_engines:
-                await self._rev_image_search(poi, revimg_search_engine, sha_hash)
-
-            reverse_search_spt = time.time()
-            self._logger.warn(
-                f"Time elapsed for reverseImgSearch for {sha_hash} is {reverse_search_spt - reverse_search_st}"
-            )
+            with TimeIt('reverse image search'):
+                for revimg_search_engine in self.reverse_image_search_engines:
+                    async for res in self._rev_image_search(poi, revimg_search_engine, sha_hash):
+                        yield res
 
         except Exception as err:
             self._logger.error(err, exc_info=True)
             self.conn_storage.rollback()
-            return False
 
-        return True
-
-    def _region_find(self, img_path, sha_hash):
+    def _region_find(self, img_path: str, sha_hash: str):
         """
         Find regions in an image, put the regions with attributes in the storage of self.
         Calculate the probabilities of a region being a logo and store it.
@@ -230,33 +197,6 @@ class ReverseImageSearch:
                         logo_prob,
                     ),
                 )
-            if self.clearbit:
-                self.conn_storage.execute(
-                    "INSERT INTO region_info (filepath, region, width, height, xcoord, ycoord, colourcount, dominant_colour_pct, parent, child, invert, mean, std, skew, kurtosis, entropy, otsu, energy, occupied_bins, label, logo_prob) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)",
-                    (
-                        sha_hash,
-                        9999,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        -1,
-                        -1,
-                        -1,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        "clearbit",
-                        1,
-                    ),
-                )
             self.conn_storage.commit()
 
             return poi
@@ -265,9 +205,9 @@ class ReverseImageSearch:
             self._logger.error(err, exc_info=True)
             self.conn_storage.rollback()
 
-    async def _rev_image_search(self, poi: list[RegionData], revimg_search_engine: ReverseImageSearchEngine, sha_hash):
+    async def _rev_image_search(self, poi: list[RegionData], revimg_search_engine: ReverseImageSearchEngine, sha_hash: str) -> AsyncIterator[str]:
         """
-        Reverse image search and store 7 image matches results. Also clearbit functionality.
+        Reverse image search and store 7 image matches results.
         """
 
         # Reverse image searching the regions using the search engine
@@ -282,28 +222,10 @@ class ReverseImageSearch:
 
             self._logger.info(f"Handling region {region_data.index}")
 
-            res = itertools.islice(revimg_search_engine.query(region_data.region), 7)
-
-            count_entry = 0
-
-            for result in res:
-                self.conn_storage.execute(
-                    "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                    (sha_hash, revimg_search_engine.name, region_data.index, count_entry, result),
-                )
-                count_entry += 1
-                self.conn_storage.commit()
-
-        if self.clearbit:
-            raise NotImplementedError()
-            self._logger.info("Handling clearbit logo")
-            res = revimg_search_engine.get_n_image_matches_clearbit(self.htmlsession, self.tld, n=7)
-            count_entry = 0
-
-            for result in res:
-                self.conn_storage.execute(
-                    "INSERT INTO search_result_image (filepath, search_engine, region, entry, result) VALUES (?, ?, ?, ?, ?)",
-                    (sha_hash, "clearbit", 9999, count_entry, result),
-                )
-                count_entry += 1
-                self.conn_storage.commit()
+            count = 0
+            for res in revimg_search_engine.query(region_data.region):
+                yield res
+                
+                count += 1
+                if count >= 7:
+                    break
