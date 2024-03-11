@@ -96,8 +96,8 @@ class DST(DetectionMethod):
                 htmlsession=html_session,
                 clf=logo_classifier
             )
-            url_list_img = search.handle_folder(session_file_path)
-            print(url_list_img)
+            url_list_img = search.search_image(os.path.join(session_file_path, 'screen.png'))
+            print(url_list_img) # TODO remove
 
             # Handle results
             if asyncio.run(check_search_results(url_registered_domain, url_list_img)):

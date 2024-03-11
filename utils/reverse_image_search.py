@@ -1,5 +1,4 @@
 import asyncio
-import os
 from collections.abc import AsyncIterator
 
 from requests_html import HTMLSession
@@ -32,19 +31,14 @@ class ReverseImageSearch:
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
-    def handle_folder(self, subfolder: str) -> list[str] | None:
-        self._logger.info("Opening folder: " + subfolder)
+    def search_image(self, img_path: str) -> list[str]:
+        async def search_images():
+            results = []
+            async for x in self._search_image_all(img_path):
+                results.append(x)
+            return results
 
-        if not os.path.isfile(os.path.join(subfolder, "screen.png")):
-            self._logger.error("No screen.png for: " + subfolder)
-        else:
-            async def search_images():
-                results = []
-                async for x in self._search_image_all(os.path.join(subfolder, "screen.png")):
-                    results.append(x)
-                return results
-
-            return asyncio.run(search_images())
+        return asyncio.run(search_images())
 
     async def _search_image_all(self, img_path: str) -> AsyncIterator[str]:
         # TODO: Add docstring
