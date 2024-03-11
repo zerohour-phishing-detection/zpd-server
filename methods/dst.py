@@ -92,7 +92,6 @@ class DST(DetectionMethod):
 
         with TimeIt("image-only reverse page search"):
             search = ReverseImageSearch(
-                storage=DB_PATH_OUTPUT,
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
                 upload=True,
