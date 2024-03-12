@@ -10,7 +10,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
-import utils.utils as ut
 from methods import DetectionMethod
 from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
@@ -20,6 +19,7 @@ from utils.logging import main_logger
 from utils.logo_finder import LogoFinder
 from utils.result import ResultType
 from utils.timing import TimeIt
+from utils.utils import get_page_title
 
 # Option for saving the taken screenshots
 SAVE_SCREENSHOT_FILES = False
@@ -71,7 +71,7 @@ class DST(DetectionMethod):
         with TimeIt("text-only reverse page search"):
             # Initiate text-only reverse image search instance
             html_file = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash, "page.html")
-            page_title = ut.get_page_title(html_file)
+            page_title = get_page_title(html_file)
             if page_title is None:
                 return
 
