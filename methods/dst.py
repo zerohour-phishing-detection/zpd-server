@@ -1,8 +1,8 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import itertools
 import os
-import sqlite3
 
 import joblib
 from requests_html import HTMLSession
@@ -10,14 +10,15 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
+import utils.utils as ut
 from methods import DetectionMethod
 from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.logging import main_logger
+from utils.logo_finder import LogoFinder
 from utils.result import ResultType
-from utils.reverse_image_search import ReverseImageSearch
 from utils.timing import TimeIt
 
 # Option for saving the taken screenshots
@@ -66,30 +67,19 @@ class DST(DetectionMethod):
             )
             screenshot_width, screenshot_height = parsing.get_size()
 
-        db_conn_output = sqlite3.connect(DB_PATH_OUTPUT)
-
         # Perform text search of the screenshot
         with TimeIt("text-only reverse page search"):
             # Initiate text-only reverse image search instance
-            search = ReverseImageSearch(
-                storage=DB_PATH_OUTPUT,
-                reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-                text_search_engines=[GoogleTextSearchEngine()],
-                folder=SESSION_FILE_STORAGE_PATH,
-                upload=False,
-                mode="text",
-                htmlsession=html_session,
-                clf=logo_classifier,
-            )
+            html_file = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash, "page.html")
+            page_title = ut.get_page_title(html_file)
+            if page_title is None:
+                return
 
-            search.handle_folder(session_file_path, url_hash)
+            search_engine = GoogleTextSearchEngine()
+            url_list_text = list(itertools.islice(search_engine.query(page_title), 7))
 
-            # Get result from the above search
-            url_list_text = db_conn_output.execute(
-                "SELECT DISTINCT result FROM search_result_text WHERE filepath = ?",
-                [url_hash],
-            ).fetchall()
-            url_list_text = [url[0] for url in url_list_text]
+            main_logger.info(f'Found {len(url_list_text)} URLs')
+            main_logger.debug(f'URLs found: {url_list_text}')
 
             # Handle results of search from above
             if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
@@ -100,26 +90,19 @@ class DST(DetectionMethod):
                 return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
-            search = ReverseImageSearch(
-                storage=DB_PATH_OUTPUT,
+            logo_finder = LogoFinder(
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-                text_search_engines=[GoogleTextSearchEngine()],
                 folder=SESSION_FILE_STORAGE_PATH,
-                upload=True,
-                mode="image",
                 htmlsession=html_session,
-                clf=logo_classifier,
-                clearbit=USE_CLEARBIT_LOGO_API,
-                tld=url_registered_domain,
+                clf=logo_classifier
             )
-            search.handle_folder(session_file_path, url_hash)
 
-            # Get results from above search
-            url_list_img = db_conn_output.execute(
-                "SELECT DISTINCT result FROM search_result_image WHERE filepath = ?",
-                [url_hash],
-            ).fetchall()
-            url_list_img = [url[0] for url in url_list_img]
+            async def search_images():
+                results = []
+                async for x in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
+                    results.append(x)
+                return results
+            url_list_img = asyncio.run(search_images())
 
             # Handle results
             if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
