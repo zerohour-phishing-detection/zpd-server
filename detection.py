@@ -22,17 +22,76 @@ if not os.path.isdir("db"):
 session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 
 # Instantiate a logger for the phishing detection
-logger = main_logger.getChild('detection')
+logger = main_logger.getChild("detection")
+
+
+class DetectionSettings:
+    detection_methods: list[str]
+    decision_strategy: str
+    bypass_cache: bool
+
+    def __init__(
+        self,
+        detection_methods: list[str] = ["dst"],
+        decision_strategy: str = "majority",
+        bypass_cache: bool = False,
+    ):
+        self.detection_methods = detection_methods
+        self.decision_strategy = decision_strategy
+        self.bypass_cache = bypass_cache
+
+    @staticmethod
+    def from_json(json):
+        detection_methods = json["detection-methods"]
+
+        decision_strategy = json["decision-strategy"]
+
+        if "bypass-cache" in json:
+            bypass_cache = json["bypass-cache"]
+            return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
+
+        return DetectionSettings(detection_methods, decision_strategy)
+
+
+class DetectionData:
+    url: str
+    screenshot_url: str
+    uuid: str
+    pagetitle: str
+
+    def __init__(
+        self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""
+    ):
+        self.url = url
+        self.screenshot_url = screenshot_url
+        self.uuid = uuid
+        self.pagetitle = pagetitle
+
+    @staticmethod
+    def from_json(json):
+        url = json["URL"]
+        screenshot_url = json["URL"]
+
+        # extra json field for evaluation purposes
+        # the hash computed in the DB is the this one
+        if "phishURL" in json:  # TODO: only allow this on a testing environment, not prod
+            url = json["phishURL"]
+            logger.info(f"Real URL changed to phishURL: {url}\n")
+
+        pagetitle = json["pagetitle"]
+        uuid = json["uuid"]
+
+        return DetectionData(url, screenshot_url, uuid, pagetitle)
 
 
 # DEPRECATED
-def test_old(data: "DetectionData") -> "DetectionResult":
-    return test(
-        data, DetectionSettings()
-    )
+def test_old(data: DetectionData) -> DetectionResult:
+    return test(data, DetectionSettings())
 
 
-def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
+def test(
+    data: "DetectionData", settings: DetectionSettings = DetectionSettings()
+) -> "DetectionResult":
     logger.info(f"""
 
 ##########################################################
@@ -71,64 +130,3 @@ def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResu
     session.set_state(result.name, "DONE")
 
     return DetectionResult(data.url, url_hash, "DONE", result)
-
-
-class DetectionSettings:
-    detection_methods: list[str]
-    decision_strategy: str
-    bypass_cache: bool
-
-    def __init__(
-        self,
-        # TODO fix this
-        detection_methods: list[str] = ["dst"],
-        decision_strategy: str = "majority",
-        bypass_cache: bool = False,
-    ):
-        self.detection_methods = detection_methods
-        self.decision_strategy = decision_strategy
-        self.bypass_cache = bypass_cache
-
-    @staticmethod
-    def from_json(json):
-        detection_methods = json["detection-methods"]
-
-        decision_strategy = json["decision-strategy"]
-
-        
-        if "bypass-cache" in json:
-            bypass_cache = json["bypass-cache"]
-            return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
-
-        return DetectionSettings(detection_methods, decision_strategy)
-
-
-class DetectionData:
-    url: str
-    screenshot_url: str
-    uuid: str
-    pagetitle: str
-
-    def __init__(
-        self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""
-    ):
-        self.url = url
-        self.screenshot_url = screenshot_url
-        self.uuid = uuid
-        self.pagetitle = pagetitle
-
-    @staticmethod
-    def from_json(json):
-        url = json["URL"]
-        screenshot_url = json["URL"]
-
-        # extra json field for evaluation purposes
-        # the hash computed in the DB is the this one
-        if "phishURL" in json:  # TODO: only allow this on a testing environment, not prod
-            url = json["phishURL"]
-            logger.info(f"Real URL changed to phishURL: {url}\n")
-
-        pagetitle = json["pagetitle"]
-        uuid = json["uuid"]
-
-        return DetectionData(url, screenshot_url, uuid, pagetitle)
