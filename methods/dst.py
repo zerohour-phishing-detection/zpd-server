@@ -103,7 +103,6 @@ class DST(DetectionMethod):
                     results.append(x)
                 return results
             url_list_img = asyncio.run(search_images())
-            print(url_list_img) # TODO remove
 
             # Handle results
             if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
