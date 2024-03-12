@@ -1,10 +1,10 @@
-FROM python:latest
+FROM python:3.11-bookworm
 
 WORKDIR /usr/src/server
 
 # Install Chrome dependencies, and download Chrome itself
 RUN apt-get update -y \
-	&& apt-get install ffmpeg libsm6 libxext6 -y \
+	&& apt-get install ffmpeg libsm6 libxext6 wget -y \
 	&& wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
 	&& apt-get install ./google-chrome-stable_current_amd64.deb -y \
 	&& rm ./google-chrome-stable_current_amd64.deb \
