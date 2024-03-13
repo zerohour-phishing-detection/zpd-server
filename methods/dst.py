@@ -77,7 +77,7 @@ class DST(DetectionMethod):
             # Handle results of search from above
             if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
                 logger.info(
-                    f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
+                    f"[RESULT] Not phishing, for url {url}, due to registered domain validation from text search"
                 )
 
                 return ResultType.LEGITIMATE
@@ -100,7 +100,7 @@ class DST(DetectionMethod):
             # Handle results
             if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
                 logger.info(
-                    f"[RESULT] Not phishing, for url {url}, due to registered domain validation"
+                    f"[RESULT] Not phishing, for url {url}, due to registered domain validation from reverse image search"
                 )
 
                 return ResultType.LEGITIMATE
