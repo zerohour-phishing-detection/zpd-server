@@ -11,7 +11,7 @@ class Parsing:
     store = None
     clientscreen = None
 
-    def __init__(self, save_screenshots, title, imagedata, target_url, store):
+    def __init__(self, save_screenshots, imagedata, target_url, store):
         self.store = store
         self.clientscreen = save_screenshots
 
@@ -35,15 +35,9 @@ class Parsing:
             driver.save_screenshot(store + "/screen.png")
             driver.quit()
 
-        self.create_html(store, title)
-
     def create_png(self, store_path, image):
         with open(store_path + "/screen.png", "wb") as f:
             f.write(base64.decodebytes(image))
-
-    def create_html(self, store_path, title):
-        with open(store_path + "/page.html", "w") as g:
-            g.write("<title>" + title + "</title>")
 
     def get_size(self):
         if self.clientscreen:

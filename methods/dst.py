@@ -19,7 +19,6 @@ from utils.logging import main_logger
 from utils.logo_finder import LogoFinder
 from utils.result import ResultType
 from utils.timing import TimeIt
-from utils.utils import get_page_title
 
 # Option for saving the taken screenshots
 SAVE_SCREENSHOT_FILES = False
@@ -60,7 +59,6 @@ class DST(DetectionMethod):
             # Take screenshot of requested page
             parsing = Parsing(
                 SAVE_SCREENSHOT_FILES,
-                pagetitle,
                 image64,
                 screenshot_url,
                 store=session_file_path,
@@ -70,13 +68,8 @@ class DST(DetectionMethod):
         # Perform text search of the screenshot
         with TimeIt("text-only reverse page search"):
             # Initiate text-only reverse image search instance
-            html_file = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash, "page.html")
-            page_title = get_page_title(html_file)
-            if page_title is None:
-                return
-
             search_engine = GoogleTextSearchEngine()
-            url_list_text = list(itertools.islice(search_engine.query(page_title), 7))
+            url_list_text = list(itertools.islice(search_engine.query(pagetitle), 7))
 
             main_logger.info(f'Found {len(url_list_text)} URLs')
             main_logger.debug(f'URLs found: {url_list_text}')
