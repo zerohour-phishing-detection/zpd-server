@@ -8,13 +8,17 @@ RUN apt-get update -y \
 	&& wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
 	&& apt-get install ./google-chrome-stable_current_amd64.deb -y \
 	&& rm ./google-chrome-stable_current_amd64.deb \
-	&& rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/* \
+	&& pip install gunicorn \
+	&& useradd -m zpd && chown zpd ./
 
 # Copy and install requirements
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+USER zpd
+
 COPY . .
 
 EXPOSE 5000
-CMD [ "python", "./api.py" ]
+CMD [ "gunicorn", "-b", "0.0.0.0", "api:app" ]
