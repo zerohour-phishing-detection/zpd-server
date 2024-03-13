@@ -125,7 +125,7 @@ class DST(DetectionMethod):
                     # Match for found images, so conclude as phishing
                     driver.quit()
 
-                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons")
+                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with {resulturl}")
 
                     return ResultType.PHISHING
             driver.quit()
