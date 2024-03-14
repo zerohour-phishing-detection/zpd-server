@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 
 from PIL import Image
 from selenium import webdriver
@@ -32,6 +33,7 @@ class Parsing:
             driver = webdriver.Chrome(options=options)
             driver.set_window_size(1280, 768)
             driver.get(target_url)
+            time.sleep(2) # TODO: find better alternative to making sure page is fully loaded
             driver.save_screenshot(store + "/screen.png")
             driver.quit()
 

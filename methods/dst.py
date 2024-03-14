@@ -3,6 +3,7 @@ import concurrent.futures
 import hashlib
 import itertools
 import os
+import time
 
 import joblib
 from requests_html import HTMLSession
@@ -143,6 +144,7 @@ def check_image(driver, out_dir, index, session_file_path, resulturl):
     # Take screenshot of URL and save it
     try:
         driver.get(resulturl)
+        time.sleep(2) # TODO: find better way to waiting for page to fully load
     except Exception:
         return False
     driver.save_screenshot(out_dir + "/" + str(index) + ".png")
