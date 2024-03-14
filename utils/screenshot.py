@@ -1,3 +1,4 @@
+import os
 import time
 
 from selenium import webdriver
@@ -24,7 +25,7 @@ class ScreenShotter:
         self.driver.get(url)
         time.sleep(2) # TODO: find better alternative to making sure page is fully loaded
 
-    def get_screenshot_png(self, url: str) -> bytes:
+    def get_screenshot(self, url: str) -> bytes:
         """
         Takes a screenshot of the given URL, returning it as PNG data bytes.
 
@@ -58,9 +59,10 @@ class ScreenShotter:
         self._visit(url)
         return self.driver.get_screenshot_as_base64()
 
-    def save_screenshot(self, url: str, filename: str):
+    def save_screenshot(self, url: str, filepath: str, mkdirs: bool = True):
         """
         Takes a screenshot of the given URL, and stores it as a PNG file.
+        Also creates the parent directory for the screenshot if needed.
 
         Parameters
         ----------
@@ -68,6 +70,16 @@ class ScreenShotter:
             The URL to take a screenshot of
         filename: str
             The filename to store the screenshot in, should end in `.png`
+        mkdirs: bool = True
+            Whether to create the parent directory for the screenshot file
+            (True: create parent dirs, False: don't create parent dirs)
         """
         self._visit(url)
-        self.driver.save_screenshot(filename)
+
+        # Create directory if needed
+        if mkdirs:
+            parent = os.path.dirname(filepath)
+            if not os.path.exists(parent):
+                os.makedirs(parent)
+
+        self.driver.save_screenshot(filepath)
