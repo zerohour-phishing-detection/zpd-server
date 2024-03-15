@@ -1,3 +1,5 @@
+import asyncio
+import concurrent.futures
 from collections.abc import AsyncIterator
 
 from requests_html import HTMLSession
@@ -122,20 +124,30 @@ class LogoFinder:
         logo_probas.sort(key=lambda t: t[1], reverse=True)
 
         region_count = 0
-        # TODO: concurrency here
-        for region_data, logo_proba in logo_probas:
-            self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
-
-            searchres_count = 0
-            for res in revimg_search_engine.query(region_data.region):
-                yield res
-
-                # Limit to the first 7 search results
-                searchres_count += 1
-                if searchres_count >= 7:
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            loop = asyncio.get_running_loop()
+            coros = []
+            for region_data, logo_proba in logo_probas:
+                self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
+                coros.append(
+                    loop.run_in_executor(pool, lambda:revimg_search_engine.query(region_data.region))
+                )
+                # Limit to the top 3 regions
+                region_count += 1
+                if region_count >= 10:
                     break
+                    
+            for coro in coros:
+                searchres_count = 0
+                
+                for res in await coro:
+                    # Limit to the first 7 search results
+                    if searchres_count >= 7:
+                        break
+                    yield res
+                    searchres_count += 1
 
-            # Limit to the top 3 regions
-            region_count += 1
-            if region_count >= 3:
-                break
+                   
+
+                
+                
