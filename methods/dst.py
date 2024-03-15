@@ -104,6 +104,7 @@ class DST(DetectionMethod):
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
+            # TODO: implement concurrency
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
                 if check_image(out_dir, index, session_file_path, resulturl):
