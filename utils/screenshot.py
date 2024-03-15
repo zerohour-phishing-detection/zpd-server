@@ -5,18 +5,27 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
+# TODO: fix .pdf URLs, currently saves file and displays previous page
 class ScreenShotter:
     """
     A utility class that helps with taking screenshots of webpages from URLs.
     """
     driver: webdriver.Chrome
 
-    def __init__(self):
+    def __init__(self, window_size: tuple[int, int] = (1280, 768)):
+        """
+        Instantiates a new screenshotter.
+
+        Parameters
+        ----------
+        window_size: tuple[int, int]
+            The image size of the resulting screenshots as a `(width, height)` tuple.
+        """
         options = Options()
         options.add_argument("--headless")
 
         self.driver = webdriver.Chrome(options=options)
-        self.driver.set_window_size(1280, 768)
+        self.driver.set_window_size(*window_size)
     
     def _visit(self, url: str):
         """
@@ -83,3 +92,21 @@ class ScreenShotter:
                 os.makedirs(parent)
 
         self.driver.save_screenshot(filepath)
+    
+    def get_window_size(self) -> tuple[int, int]:
+        """
+        Gets the window size of screenshots.
+         
+        Returns
+        -------
+        (width, height): tuple[int, int]
+        """
+        return tuple(self.driver.get_window_size().values())
+
+    def close(self):
+        """
+        Closes this screenshotter. After closing, do not keep using this instance.
+        """
+        self.driver.close()
+
+screenshotter = ScreenShotter()
