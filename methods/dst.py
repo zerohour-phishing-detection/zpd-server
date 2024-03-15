@@ -64,11 +64,15 @@ class DST(DetectionMethod):
             search_engine = GoogleTextSearchEngine()
             url_list_text = list(itertools.islice(search_engine.query(pagetitle), 7))
 
-            main_logger.info(f'Found {len(url_list_text)} URLs')
+            # Get all unique domains from URLs
+            domain_list_text = set([domains.get_hostname(url) for url in url_list_text])
+
+            main_logger.info(f'Found {len(url_list_text)} URLs ({len(domain_list_text)} unique domains)')
             main_logger.debug(f'URLs found: {url_list_text}')
+            main_logger.debug(f'domains found: {domain_list_text}')
 
             # Handle results of search from above
-            if asyncio.run(check_search_results(url_registered_domain, url_list_text)):
+            if asyncio.run(check_search_results(url_registered_domain, domain_list_text)):
                 logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from text search"
                 )
@@ -84,14 +88,22 @@ class DST(DetectionMethod):
             )
 
             async def search_images():
-                results = []
-                async for x in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
-                    results.append(x)
-                return results
+                urls = []
+                async for url in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
+                    urls.append(url)
+                return urls
             url_list_img = asyncio.run(search_images())
 
+            # Get all unique non-checked domains from URLs
+            domain_list_img = set([domains.get_hostname(url) for url in url_list_img])
+            domain_list_img = domain_list_img.difference(domain_list_text) # remove all domains we already checked
+
+            main_logger.info(f'Found {len(url_list_img)} URLs ({len(domain_list_img)} unique domains)')
+            main_logger.debug(f'URLs found: {url_list_img}')
+            main_logger.debug(f'domains found: {domain_list_img}')
+
             # Handle results
-            if asyncio.run(check_search_results(url_registered_domain, url_list_img)):
+            if asyncio.run(check_search_results(url_registered_domain, domain_list_img)):
                 logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from reverse image search"
                 )
@@ -150,14 +162,14 @@ def check_image(out_dir, index, session_file_path, resulturl):
     return False
 
 
-async def check_search_results(url_registered_domain, found_urls) -> bool:
+async def check_search_results(url_registered_domain, found_domains) -> bool:
     with TimeIt("SAN domain check"):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             loop = asyncio.get_running_loop()
             coros = []
-            for url in found_urls:
+            for domain in found_domains:
                 coros.append(
-                    loop.run_in_executor(pool, lambda: check_url(url_registered_domain, url))
+                    loop.run_in_executor(pool, lambda: check_url(url_registered_domain, domain))
                 )
 
             for coro in asyncio.as_completed(coros):
@@ -168,18 +180,15 @@ async def check_search_results(url_registered_domain, found_urls) -> bool:
         return False
 
 
-def check_url(url_registered_domain, url) -> bool:
-    # For each found URL, get the hostname
-    domain = domains.get_hostname(url)
-
+def check_url(url_registered_domain, domain) -> bool:
     # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
     try:
         san_names = domains.get_san_names(domain)
     except Exception as e:
-        logger.error(f"Error in SAN for {domain} (from URL {url}): {str(e)}")
+        logger.error(f"Error in SAN for {domain}: {str(e)}")
         return
 
-    logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
+    logger.debug(f"Domain {domain} has SAN names {san_names}")
 
     for hostname in [domain] + san_names:
         # Check if any of the domains found matches the input domain
