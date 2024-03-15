@@ -24,7 +24,6 @@ session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 # Instantiate a logger for the phishing detection
 logger = main_logger.getChild("detection")
 
-
 class DetectionSettings:
     detection_methods: list[str]
     decision_strategy: str
@@ -90,15 +89,21 @@ def test_old(data: DetectionData) -> DetectionResult:
 
 
 def test(
-    data: "DetectionData", settings: DetectionSettings = DetectionSettings()
-) -> "DetectionResult":
+    data: DetectionData, settings: DetectionSettings = DetectionSettings()
+) -> DetectionResult:
+    
+    url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
+    
     logger.info(f"""
 
 ##########################################################
-##### Request received for URL:\t{data.url}
+##### Request received:
+#####   for URL:\t{data.url}
+#####   with hash:\t{url_hash}
 ##########################################################
+#####   from UUID:\t{data.uuid}
 """)
-    url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
+    
     session = session_storage.get_session(data.uuid, data.url)
 
     if not settings.bypass_cache:

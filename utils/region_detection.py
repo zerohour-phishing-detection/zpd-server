@@ -367,6 +367,11 @@ def _validate_regions(regions_data: list[RegionData]) -> list[RegionData]:
     for index, region_data in enumerate(regions_data):
         region_height, region_width, _ = region_data.region.shape
 
+        if np.isnan(region_data.skew) or np.isnan(region_data.kurtosis):
+            # Fully same-color image, filter it out
+            del regions_data[index]
+            continue
+
         for index2, region_data2 in enumerate(regions_data):
             # Skip the same region. We do not want to compare the same region with itself
             if index == index2:
