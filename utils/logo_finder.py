@@ -134,7 +134,7 @@ class LogoFinder:
                 )
                 # Limit to the top 3 regions
                 region_count += 1
-                if region_count >= 10:
+                if region_count >= 3:
                     break
                     
             for coro in coros:
