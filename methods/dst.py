@@ -3,22 +3,19 @@ import concurrent.futures
 import hashlib
 import itertools
 import os
-import time
 
 import joblib
 from requests_html import HTMLSession
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 import utils.classifiers as cl
 from methods import DetectionMethod
-from parsing import Parsing
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.logging import main_logger
 from utils.logo_finder import LogoFinder
 from utils.result import ResultType
+from utils.screenshot import screenshotter
 from utils.timing import TimeIt
 
 # Option for saving the taken screenshots
@@ -58,13 +55,8 @@ class DST(DetectionMethod):
 
         with TimeIt("taking screenshot"):
             # Take screenshot of requested page
-            parsing = Parsing(
-                SAVE_SCREENSHOT_FILES,
-                image64,
-                screenshot_url,
-                store=session_file_path,
-            )
-            screenshot_width, screenshot_height = parsing.get_size()
+            screenshot_path = os.path.join(session_file_path, 'screen.png')
+            screenshotter.save_screenshot(screenshot_url, screenshot_path)
 
         # Perform text search of the screenshot
         with TimeIt("text-only reverse page search"):
@@ -112,24 +104,14 @@ class DST(DetectionMethod):
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
-            # Initialize web driver
-            options = Options()
-            options.add_argument("--headless")
-
-            driver = webdriver.Chrome(options=options)
-            driver.set_window_size(screenshot_width, screenshot_height)
-            driver.set_page_load_timeout(WEB_DRIVER_PAGE_LOAD_TIMEOUT)
-
+            # TODO: implement concurrency
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
-                if check_image(driver, out_dir, index, session_file_path, resulturl):
+                if check_image(out_dir, index, session_file_path, resulturl):
                     # Match for found images, so conclude as phishing
-                    driver.quit()
-
-                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with {resulturl}")
+                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
 
                     return ResultType.PHISHING
-            driver.quit()
 
         # If the inconclusive stems from google blocking:
         #   e.g. blocked == True
@@ -140,19 +122,14 @@ class DST(DetectionMethod):
         return ResultType.INCONCLUSIVE
 
 
-def check_image(driver, out_dir, index, session_file_path, resulturl):
+def check_image(out_dir, index, session_file_path, resulturl):
+    path_a = os.path.join(session_file_path, "screen.png")
+    path_b = os.path.join(out_dir, f'{index}.png')
+    
     # Take screenshot of URL and save it
-    try:
-        driver.get(resulturl)
-        time.sleep(2) # TODO: find better way to waiting for page to fully load
-    except Exception:
-        return False
-    driver.save_screenshot(out_dir + "/" + str(index) + ".png")
+    screenshotter.save_screenshot(resulturl, path_b)
 
     # Image compare
-    path_a = os.path.join(session_file_path, "screen.png")
-    path_b = out_dir + "/" + str(index) + ".png"
-
     emd, s_sim = None, None
     try:
         emd = cl.earth_movers_distance(path_a, path_b)
