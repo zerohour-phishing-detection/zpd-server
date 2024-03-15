@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 import detection
-from detection import DetectionData, DetectionSettings
+from detection import DetectionData
 from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
@@ -18,17 +18,9 @@ session_storage = detection.session_storage
 @v2.route("/check", methods=["POST"])
 def check():
     json = request.get_json()
-    json_data = json["data"]
+    data = DetectionData.from_json(json)
 
-    data = DetectionData.from_json(json_data)
-
-    if "settings" in json:
-        settings = DetectionSettings.from_json(json["settings"])
-        res = detection.test(data, settings)
-    else:
-        res = detection.test(data)
-
-    return res.to_json_str()
+    return detection.test(data).to_json_str()
 
 
 @v2.route("/state", methods=["POST"])
@@ -40,7 +32,7 @@ def get_state():
     session = session_storage.get_session(uuid, url)
     status = session.get_state()
 
-    result = [{"status": status.result, "state": status.state}]
+    result = [{"result": status.result, "state": status.state}]
 
     return jsonify(result)
 
