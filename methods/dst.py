@@ -18,16 +18,8 @@ from utils.result import ResultType
 from utils.screenshot import screenshotter
 from utils.timing import TimeIt
 
-# Option for saving the taken screenshots
-SAVE_SCREENSHOT_FILES = False
-# Whether to use the Clearbit logo API (see https://clearbit.com/logo)
-USE_CLEARBIT_LOGO_API = False
-
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
-# Database path for the operational output (?)
-DB_PATH_OUTPUT = "db/output_operational.db"
-# Database path for the sessions
 
 # Page loading timeout for web driver
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
@@ -82,7 +74,6 @@ class DST(DetectionMethod):
         with TimeIt("image-only reverse page search"):
             logo_finder = LogoFinder(
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-                folder=SESSION_FILE_STORAGE_PATH,
                 htmlsession=html_session,
                 clf=logo_classifier
             )
