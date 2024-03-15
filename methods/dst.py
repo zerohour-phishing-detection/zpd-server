@@ -113,8 +113,6 @@ class DST(DetectionMethod):
         # No match through images, go on to image comparison per URL
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
 
             # TODO: implement concurrency
             # Check all found URLs
