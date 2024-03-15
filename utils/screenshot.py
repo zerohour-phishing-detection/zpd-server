@@ -5,7 +5,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
-# TODO: fix .pdf URLs, currently saves file and displays previous page
 class ScreenShotter:
     """
     A utility class that helps with taking screenshots of webpages from URLs.
@@ -22,6 +21,14 @@ class ScreenShotter:
             The image size of the resulting screenshots as a `(width, height)` tuple.
         """
         options = Options()
+        # Prevent automatic download of .pdf files
+        prefs = {
+            "download.default_directory": "/dev/null"
+        }
+        options.add_experimental_option(
+            "prefs", prefs
+        )
+
         options.add_argument("--headless")
 
         self.driver = webdriver.Chrome(options=options)
@@ -31,7 +38,12 @@ class ScreenShotter:
         """
         Visits the given URL, and wait for it to be loaded.
         """
+        # First, go to the new tab page so .pdf files (that dont change the window) dont show the last opened website instead
+        # TODO: improve solution to these pdf shenanigans, if possible
+        self.driver.get('chrome://newtab')
+
         self.driver.get(url)
+        
         time.sleep(2) # TODO: find better alternative to making sure page is fully loaded
 
     def get_screenshot(self, url: str) -> bytes:
@@ -88,7 +100,7 @@ class ScreenShotter:
         # Create directory if needed
         if mkdirs:
             parent = os.path.dirname(filepath)
-            if not os.path.exists(parent):
+            if len(parent) != 0 and not os.path.exists(parent):
                 os.makedirs(parent)
 
         self.driver.save_screenshot(filepath)
