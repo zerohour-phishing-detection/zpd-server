@@ -33,13 +33,18 @@ def test_old(data: "DetectionData") -> "DetectionResult":
 
 
 def test(data: "DetectionData", settings: "DetectionSettings") -> "DetectionResult":
+    url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
+
     logger.info(f"""
 
 ##########################################################
-##### Request received for URL:\t{data.url}
+##### Request received:
+#####   for URL:\t{data.url}
+#####   with hash:\t{url_hash}
+#####   from UUID:\t{data.uuid}
 ##########################################################
 """)
-    url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
+
     session = session_storage.get_session(data.uuid, data.url)
 
     if not settings.bypass_cache:
