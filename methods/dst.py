@@ -198,8 +198,8 @@ def check_url(url_registered_domain, url) -> bool:
     # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
     try:
         san_names = domains.get_san_names(domain)
-    except Exception:
-        logger.error(f"Error in SAN for {domain} (from URL {url})", exc_info=1)
+    except Exception as e:
+        logger.error(f"Error in SAN for {domain} (from URL {url}): {str(e)}")
         return
 
     logger.debug(f"Domain of URL `{url}` is {domain}, with SAN names {san_names}")
