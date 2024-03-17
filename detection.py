@@ -10,9 +10,6 @@ from utils.timing import TimeIt
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
 
-# Database path for the operational output (?)
-DB_PATH_OUTPUT = "db/output_operational.db"
-
 # Database path for the sessions
 DB_PATH_SESSIONS = "db/sessions.db"
 if not os.path.isdir("db"):
