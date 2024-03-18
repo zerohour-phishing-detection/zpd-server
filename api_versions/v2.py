@@ -56,7 +56,6 @@ def get_available_capabilities():
             "decision-strategy": list(DECISION_STRATEGIES.keys()),
         }
     ]
-    print(list(DECISION_STRATEGIES.items())[0])
     return jsonify(result)
 
 
