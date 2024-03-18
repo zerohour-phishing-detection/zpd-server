@@ -2,6 +2,7 @@ import os
 import time
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 
 
@@ -33,6 +34,7 @@ class ScreenShotter:
 
         self.driver = webdriver.Chrome(options=options)
         self.driver.set_window_size(*window_size)
+        self.driver.set_page_load_timeout(5)
     
     def _visit(self, url: str):
         """
@@ -41,10 +43,19 @@ class ScreenShotter:
         # First, go to the new tab page so .pdf files (that dont change the window) dont show the last opened website instead
         # TODO: improve solution to these pdf shenanigans, if possible
         self.driver.get('chrome://newtab')
+        print('newtab visited')
 
-        self.driver.get(url)
+        try:
+            self.driver.get(url)
+        except TimeoutException as e:
+            raise Exception(e.msg)
+            
+        
+        print('actual url visited')
         
         time.sleep(2) # TODO: find better alternative to making sure page is fully loaded
+        
+        print('slept')
 
     def get_screenshot(self, url: str) -> bytes:
         """
@@ -96,6 +107,7 @@ class ScreenShotter:
             (True: create parent dirs, False: don't create parent dirs)
         """
         self._visit(url)
+        print('url visited')
 
         # Create directory if needed
         if mkdirs:

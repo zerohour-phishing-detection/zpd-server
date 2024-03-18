@@ -2,7 +2,7 @@ import time
 
 from utils.logging import main_logger
 
-logger = main_logger.getChild('utils.timing')
+logger = main_logger.getChild("utils.timing")
 
 
 class TimeIt:

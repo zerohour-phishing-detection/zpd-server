@@ -48,7 +48,11 @@ class DST(DetectionMethod):
         with TimeIt("taking screenshot"):
             # Take screenshot of requested page
             screenshot_path = os.path.join(session_file_path, 'screen.png')
-            screenshotter.save_screenshot(screenshot_url, screenshot_path)
+            try:
+                screenshotter.save_screenshot(screenshot_url, screenshot_path)
+            except Exception as e:
+                logger.exception("Error taking screenshot." + str(e))
+                return ResultType.INCONCLUSIVE
 
         # Perform text search of the screenshot
         with TimeIt("text-only reverse page search"):
@@ -100,7 +104,7 @@ class DST(DetectionMethod):
                 )
 
                 return ResultType.LEGITIMATE
-
+        
         # No match through images, go on to image comparison per URL
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
@@ -126,9 +130,14 @@ class DST(DetectionMethod):
 def check_image(out_dir, index, session_file_path, resulturl):
     path_a = os.path.join(session_file_path, "screen.png")
     path_b = os.path.join(out_dir, f'{index}.png')
-    
+      
     # Take screenshot of URL and save it
-    screenshotter.save_screenshot(resulturl, path_b)
+    try:
+        screenshotter.save_screenshot(resulturl, path_b)
+    except Exception as e:
+        logger.warning(f"Error taking screenshot of {resulturl}: {str(e)}")
+        return False
+
 
     # Image compare
     emd, s_sim = None, None
