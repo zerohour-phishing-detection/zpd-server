@@ -8,12 +8,12 @@ import joblib
 from requests_html import HTMLSession
 
 import utils.classifiers as cl
+from logo_finders.reverse_logo_region_search import ReverseLogoRegionSearch
 from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
 from utils.logging import main_logger
-from utils.logo_finder import LogoFinder
 from utils.result import ResultType
 from utils.screenshot import screenshotter
 from utils.timing import TimeIt
@@ -72,7 +72,7 @@ class DST(DetectionMethod):
                 return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
-            logo_finder = LogoFinder(
+            logo_finder = ReverseLogoRegionSearch(
                 reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
                 htmlsession=html_session,
                 clf=logo_classifier
@@ -80,7 +80,7 @@ class DST(DetectionMethod):
 
             async def search_images():
                 urls = []
-                async for url in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
+                async for url in logo_finder.find(os.path.join(session_file_path, 'screen.png')):
                     urls.append(url)
                 return urls
             url_list_img = asyncio.run(search_images())
