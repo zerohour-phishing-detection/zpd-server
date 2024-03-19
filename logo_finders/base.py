@@ -6,6 +6,10 @@ from utils.logging import main_logger
 
 
 class LogoFinder(abc.ABC):
+	"""
+	Find the origin of webpage screenshots by searching in the screenshot
+	for visual features (such as logos) and finding their origin online.
+	"""
 	name: str
 	logger: logging.Logger
 	
