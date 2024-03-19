@@ -34,8 +34,9 @@ Then, there are several steps to test the scripts:
 - [check-classifiers.py](script/check-classifiers.py) and [hit-verifier.py](script/hit-verifier.py) are middleware to pre-process `output_operational.db` for the evaluation
 - [ROC.py](script/ROC.py) carries out the final evaluation with two databases as input ('phishing' and 'benign')
 
-## Ready to run VM
-A ready to run deployment is available as an OVA image for VirtualBox [here](https://surfdrive.surf.nl/files/index.php/s/88nDPEFemrKmwCg) (Ubuntu 20).
+## Google Cloud Vision setup
+To be able to use Google Cloud Vision Logo Detection (based in `vision_logo_detection.py`),
+you need to add a `.gcloud_creds.json` file, containing a service account key to a Google Cloud Service Account.
 
 ## Acknowledgment:
 The authors wish to express their gratitude to Ardela Isuf and Sam Cantineau for their work in this project.

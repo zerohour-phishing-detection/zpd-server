@@ -1,10 +1,13 @@
 import itertools
+import os
 from typing import AsyncIterator
 
 from google.cloud import vision
 
 from logo_finders.base import LogoFinder
 from search_engines.text.google import GoogleTextSearchEngine
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ".gcloud_creds.json"
 
 features = [vision.Feature(type_=vision.Feature.Type.LOGO_DETECTION)]
 
