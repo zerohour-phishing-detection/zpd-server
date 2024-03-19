@@ -16,3 +16,4 @@ db/
 files/
 
 mytest.py
+.gcloud_creds.json
