@@ -18,7 +18,6 @@ class LogoFinder:
     Finds logos within an image, and their URL origins.
     """
     reverse_image_search_engines: list[ReverseImageSearchEngine] = None
-    folder: str = None
     htmlsession: HTMLSession = None
     clf_logo: LogisticRegression = None
 
@@ -27,12 +26,10 @@ class LogoFinder:
     def __init__(
         self,
         reverse_image_search_engines: list[ReverseImageSearchEngine] = None,
-        folder: str = None,
         htmlsession: HTMLSession = None,
         clf: LogisticRegression = None
     ):
         self.reverse_image_search_engines = reverse_image_search_engines
-        self.folder = folder
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
