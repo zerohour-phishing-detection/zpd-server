@@ -9,6 +9,7 @@ from requests_html import HTMLSession
 
 import utils.classifiers as cl
 from logo_finders.reverse_logo_region_search import ReverseLogoRegionSearch
+from logo_finders.vision_logo_detection import VisionLogoDetection
 from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
@@ -23,6 +24,9 @@ SESSION_FILE_STORAGE_PATH = "files/"
 
 # Page loading timeout for web driver
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
+
+# Which logo finder to use, 1 for `reverse_logo_region_search`, 2 for `vision_logo_detection`
+LOGO_FINDER = 2
 
 
 # Instantiate a logger for this detection method
@@ -72,11 +76,14 @@ class DST(DetectionMethod):
                 return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
-            logo_finder = ReverseLogoRegionSearch(
-                reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
-                htmlsession=html_session,
-                clf=logo_classifier
-            )
+            if LOGO_FINDER == 1:
+                logo_finder = ReverseLogoRegionSearch(
+                    reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
+                    htmlsession=html_session,
+                    clf=logo_classifier
+                )
+            else:
+                logo_finder = VisionLogoDetection()
 
             async def search_images():
                 urls = []

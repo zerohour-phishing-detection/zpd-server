@@ -37,6 +37,8 @@ class VisionLogoDetection(LogoFinder):
 	async def find(self, img_path) -> AsyncIterator[str]:
 		"""Detects logos in the file."""
 
+		self.logger.info("Starting Google Cloud Vision Logo Detection")
+
 		# Read image
 		with open(img_path, "rb") as image_file:
 			content = image_file.read()
