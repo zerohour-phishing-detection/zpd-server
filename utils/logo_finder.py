@@ -1,5 +1,3 @@
-import asyncio
-import concurrent.futures
 from collections.abc import AsyncIterator
 
 from requests_html import HTMLSession
@@ -7,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 
 import utils.region_detection as region_detection
 from search_engines.image.base import ReverseImageSearchEngine
-from utils.async_threads import ProcessGroup, ThreadWorker
+from utils.async_threads import ThreadWorker
 from utils.logging import main_logger
 from utils.region_detection import RegionData
 from utils.timing import TimeIt
@@ -128,11 +126,11 @@ class LogoFinder:
         for region_data, logo_proba in logo_probas:
             self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
 
-            process_group.schedule(revimg_search_engine.query(region_data.region))
+            process_group.schedule(lambda: revimg_search_engine.query(region_data.region))
 
             # Limit to the top 3 regions
             region_count += 1
-            if region_count >= 13:
+            if region_count >= 3:
                 break
         
         for coro in process_group.get_scheduled_processes():
@@ -144,8 +142,4 @@ class LogoFinder:
                 yield res
                 searchres_count += 1
 
-        #worker.close()
-                   
-
-                
-                
+        worker.close()
