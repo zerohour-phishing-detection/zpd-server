@@ -37,7 +37,6 @@ def get_state():
     return jsonify(result)
 
 
-# TODO: Implement this using the server's database
 @v2.route("/settings", methods=["POST"])
 def set_settings():
     # json = request.get_json()
