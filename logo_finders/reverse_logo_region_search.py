@@ -4,15 +4,17 @@ from requests_html import HTMLSession
 from sklearn.linear_model import LogisticRegression
 
 import utils.region_detection as region_detection
+from logo_finders.base import LogoFinder
 from search_engines.image.base import ReverseImageSearchEngine
 from utils.logging import main_logger
 from utils.region_detection import RegionData
 from utils.timing import TimeIt
 
 
-class LogoFinder:
+class ReverseLogoRegionSearch(LogoFinder):
     """
-    Finds logos within an image, and their URL origins.
+    Finds logos within an image, and their URL origins,
+    by reverse image searching detected logo regions in the image.
     """
     reverse_image_search_engines: list[ReverseImageSearchEngine] = None
     htmlsession: HTMLSession = None
@@ -26,20 +28,13 @@ class LogoFinder:
         htmlsession: HTMLSession = None,
         clf: LogisticRegression = None
     ):
+        super().__init__("reverse_logo_region_search")
+
         self.reverse_image_search_engines = reverse_image_search_engines
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
-    async def run(self, img_path: str) -> AsyncIterator[str]:
-        """
-        Attempts to find logos (and their origins) in the image specified by the given path.
-
-        Yields
-        ------
-        str
-            The URL where it found the logo back online.
-        """
-
+    async def find(self, img_path: str) -> AsyncIterator[str]:
         self._logger.debug("Preparing for search info")
 
         # Finds the regions in the image
