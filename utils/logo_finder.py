@@ -120,20 +120,20 @@ class LogoFinder:
         logo_probas.sort(key=lambda t: t[1], reverse=True)
 
         worker = ThreadWorker()
-        process_group = worker.new_process_group()
+        future_group = worker.new_future_group()
 
         region_count = 0
         for region_data, logo_proba in logo_probas:
             self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
 
-            process_group.schedule(lambda: revimg_search_engine.query(region_data.region))
+            future_group.schedule(lambda: revimg_search_engine.query(region_data.region))
 
             # Limit to the top 3 regions
             region_count += 1
             if region_count >= 3:
                 break
         
-        for coro in process_group.get_scheduled_processes():
+        for coro in future_group.get_scheduled_futures():
             searchres_count = 0
             for res in await coro:
                 # Limit to the first 7 search results
