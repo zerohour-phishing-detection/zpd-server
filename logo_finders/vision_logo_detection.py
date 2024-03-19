@@ -28,7 +28,8 @@ class VisionLogoDetection(LogoFinder):
 		Initiates the instance and connects to the Google Cloud API.
 
 		Note: make sure you call this within context of the same event loop,
-		as it will error otherwise.
+		as it will error otherwise. Calling this also requires that you have set up
+		the authentication, as it will also error otherwise.
 		"""
 		super().__init__("vision_logo_detection")
 		self.client = vision.ImageAnnotatorAsyncClient()
