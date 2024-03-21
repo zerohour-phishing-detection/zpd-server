@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 
 import utils.region_detection as region_detection
 from search_engines.image.base import ReverseImageSearchEngine
-from utils.async_threads import ThreadWorker
+from utils.async_threads import FutureGroup, ThreadWorker
 from utils.logging import main_logger
 from utils.region_detection import RegionData
 from utils.timing import TimeIt
@@ -31,7 +31,7 @@ class LogoFinder:
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
-    async def run(self, img_path: str) -> AsyncIterator[str]:
+    async def run(self, img_path: str, worker: ThreadWorker) -> AsyncIterator[str]:
         """
         Attempts to find logos (and their origins) in the image specified by the given path.
 
@@ -51,7 +51,7 @@ class LogoFinder:
             # For each reverse image search engine, try to find the origin of each logo region
             with TimeIt(f'Logo reverse image search using {revimg_search_engine.name}'):
                 try:
-                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine):
+                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine, worker):
                         yield res
 
                 except Exception:
@@ -111,7 +111,7 @@ class LogoFinder:
         except Exception:
             self._logger.error(f'Exception while finding regions for img_path {img_path}', exc_info=True)
 
-    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
+    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine, worker: ThreadWorker) -> AsyncIterator[str]:
         """
         Find the origin of the 3 highest-logo-probability regions, using the given search engine.
         """
@@ -119,8 +119,7 @@ class LogoFinder:
         # Sort region predictions by logo probability, in descending order
         logo_probas.sort(key=lambda t: t[1], reverse=True)
 
-        worker = ThreadWorker()
-        future_group = worker.new_future_group()
+        future_group: FutureGroup = worker.new_future_group()
 
         region_count = 0
         for region_data, logo_proba in logo_probas:
@@ -133,13 +132,11 @@ class LogoFinder:
             if region_count >= 3:
                 break
         
-        for coro in future_group.get_scheduled_futures():
+        for future in future_group.get_scheduled_futures():
             searchres_count = 0
-            for res in await coro:
+            for res in await future:
                 # Limit to the first 7 search results
                 if searchres_count >= 7:
                     break
                 yield res
                 searchres_count += 1
-
-        worker.close()
