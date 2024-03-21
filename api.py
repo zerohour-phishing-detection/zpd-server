@@ -78,7 +78,6 @@ def get_available_capabilities():
             "detection-methods": list(DETECTION_METHODS.keys()),
         }
     ]
-    print(list(DECISION_STRATEGIES.items())[0])
     return jsonify(result)
 
 
