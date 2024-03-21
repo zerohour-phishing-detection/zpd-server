@@ -55,7 +55,7 @@ class DST(DetectionMethod):
             try:
                 screenshotter.save_screenshot(screenshot_url, screenshot_path)
             except Exception as e:
-                logger.exception("Error taking screenshot." + str(e))
+                logger.exception(f"Error taking screenshot: {e}")
                 return ResultType.INCONCLUSIVE
 
         # Perform text search of the screenshot
