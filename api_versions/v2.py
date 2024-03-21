@@ -6,7 +6,7 @@ from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # Instantiate a logger for this version of the API
-logger = main_logger.getChild("v2")
+logger = main_logger.getChild("api.v2")
 
 # Create a blueprint for this version of the API
 v2 = Blueprint("v2", import_name="v2")

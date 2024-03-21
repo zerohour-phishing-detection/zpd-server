@@ -7,7 +7,6 @@ from utils.logging import main_logger
 # Instantiate a logger for this version of the API
 logger = main_logger.getChild("api.v1")
 
-
 # Create a blueprint for this version of the API
 v1 = Blueprint("v1", import_name="v1")
 

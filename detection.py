@@ -91,10 +91,10 @@ def test(
 ##### Request received:
 #####   for URL:\t{data.url}
 #####   with hash:\t{url_hash}
-##########################################################
 #####   from UUID:\t{data.uuid}
+##########################################################
 """)
-    
+
     session = session_storage.get_session(data.uuid, data.url)
 
     if not settings.bypass_cache:
