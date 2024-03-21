@@ -64,7 +64,7 @@ class DetectionData:
         self.pagetitle = pagetitle
 
     @staticmethod
-    def from_json(json):
+    def from_json(json) -> "DetectionData":
         url = json["URL"]
         screenshot_url = json["URL"]
 
@@ -80,17 +80,11 @@ class DetectionData:
         return DetectionData(url, screenshot_url, uuid, pagetitle)
 
 
-# DEPRECATED
-def test_old(data: DetectionData) -> DetectionResult:
-    return test(data, DetectionSettings())
-
-
 def test(
     data: DetectionData, settings: DetectionSettings = DetectionSettings()
 ) -> DetectionResult:
-    
     url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
-    
+
     logger.info(f"""
 
 ##########################################################
