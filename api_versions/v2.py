@@ -49,12 +49,10 @@ def set_settings():
 
 @v2.route("/capabilities", methods=["GET"])
 def get_available_capabilities():
-    result = [
-        {
-            "detection-methods": list(DETECTION_METHODS.keys()),
-            "decision-strategy": list(DECISION_STRATEGIES.keys()),
-        }
-    ]
+    result = {
+        "detection_methods": list(DETECTION_METHODS.keys()),
+        "decision_strategies": list(DECISION_STRATEGIES.keys()),
+    }
     return jsonify(result)
 
 
