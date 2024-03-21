@@ -1,4 +1,5 @@
-from concurrent.futures import Future, ThreadPoolExecutor
+from collections.abc import AsyncIterator
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 
 
 class FutureGroup:
@@ -19,6 +20,30 @@ class FutureGroup:
 
     def get_scheduled_futures(self) -> list[Future]: # Using concurrent.futures.Future as it is thread safe.
         return self.scheduled_futures
+    
+    def get_array_results(self) -> list:
+        results = []
+        while len(self.scheduled_futures) > 0:
+            for result in self.scheduled_futures:
+                if result.done():
+                    results.append(result)
+                    self.scheduled_futures.remove(result)
+        return results
+    
+    def contains_true_futures(self) -> bool:
+        while len(self.scheduled_futures) > 0:
+            for result in self.scheduled_futures:
+                if result.done():
+                    if result:
+                        print("TRUE: ", result)
+                        return True
+                    self.scheduled_futures.remove(result)
+        print("FALSE")
+        return False
+
+    def yield_results(self): #-> AsyncIterator: # what is return type?
+        for result in as_completed(self.scheduled_futures):
+            yield result
 
 class ThreadWorker:
     """
