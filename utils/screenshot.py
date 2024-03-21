@@ -43,12 +43,12 @@ class ScreenShotter:
         # First, go to the new tab page so .pdf files (that dont change the window) dont show the last opened website instead
         # TODO: improve solution to these pdf shenanigans, if possible
         self.driver.get('chrome://newtab')
-        
+
         try:
             self.driver.get(url)
         except TimeoutException as e:
-            raise Exception(e.msg)
-        
+            raise Exception(f'Timeout while visiting {url}: {e.msg}')
+
         time.sleep(2) # TODO: find better alternative to making sure page is fully loaded
 
     def get_screenshot(self, url: str) -> bytes:
