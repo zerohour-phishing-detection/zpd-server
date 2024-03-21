@@ -12,6 +12,7 @@ from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
+from utils.async_threads import FutureGroup, ThreadWorker
 from utils.logging import main_logger
 from utils.logo_finder import LogoFinder
 from utils.result import ResultType
@@ -25,6 +26,9 @@ SESSION_FILE_STORAGE_PATH = "files/"
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 
 
+# Thread worker instance shared for different concurrent parts
+worker = ThreadWorker()
+
 # Instantiate a logger for this detection method
 logger = main_logger.getChild('methods.dst')
 
@@ -37,7 +41,7 @@ logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib
 
 
 class DST(DetectionMethod):
-    def run(self, url, screenshot_url, uuid, pagetitle, image64 = "") -> ResultType:
+    async def run(self, url, screenshot_url, uuid, pagetitle, image64 = "") -> ResultType:
         url_domain = domains.get_hostname(url)
         url_registered_domain = domains.get_registered_domain(url_domain)
 
@@ -68,7 +72,7 @@ class DST(DetectionMethod):
             main_logger.debug(f'domains found: {domain_list_text}')
 
             # Handle results of search from above
-            if asyncio.run(check_search_results(url_registered_domain, domain_list_text)):
+            if await check_search_results(url_registered_domain, domain_list_text, worker):
                 logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from text search"
                 )
@@ -84,10 +88,10 @@ class DST(DetectionMethod):
 
             async def search_images():
                 urls = []
-                async for url in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
+                async for url in logo_finder.run(os.path.join(session_file_path, 'screen.png'), worker):
                     urls.append(url)
                 return urls
-            url_list_img = asyncio.run(search_images())
+            url_list_img = await search_images()
 
             # Get all unique non-checked domains from URLs
             domain_list_img = set([domains.get_hostname(url) for url in url_list_img])
@@ -98,7 +102,7 @@ class DST(DetectionMethod):
             main_logger.debug(f'domains found: {domain_list_img}')
 
             # Handle results
-            if asyncio.run(check_search_results(url_registered_domain, domain_list_img)):
+            if await check_search_results(url_registered_domain, domain_list_img, worker):
                 logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from reverse image search"
                 )
@@ -109,14 +113,15 @@ class DST(DetectionMethod):
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
 
-            # TODO: implement concurrency
+            future_group: FutureGroup = worker.new_future_group()
+
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
-                if check_image(out_dir, index, session_file_path, resulturl):
-                    # Match for found images, so conclude as phishing
-                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
-
-                    return ResultType.PHISHING
+                future_group.schedule(lambda: check_image(out_dir, index, session_file_path, resulturl) == ResultType.PHISHING)
+                    
+            if future_group.contains_true_futures(): # Match for found images, so conclude as phishing
+                logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
+                return ResultType.PHISHING
 
         # If the inconclusive stems from google blocking:
         #   e.g. blocked == True
@@ -124,6 +129,7 @@ class DST(DetectionMethod):
 
         logger.info(f"[RESULT] Inconclusive, for url {url}")
 
+        worker.close()
         return ResultType.INCONCLUSIVE
 
 
@@ -160,19 +166,15 @@ def check_image(out_dir, index, session_file_path, resulturl):
     return False
 
 
-async def check_search_results(url_registered_domain, found_domains) -> bool:
+async def check_search_results(url_registered_domain, found_domains, worker: ThreadWorker) -> bool:
     with TimeIt("SAN domain check"):
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            loop = asyncio.get_running_loop()
-            coros = []
-            for domain in found_domains:
-                coros.append(
-                    loop.run_in_executor(pool, lambda: check_url(url_registered_domain, domain))
-                )
+        future_group: FutureGroup = worker.new_future_group()
 
-            for coro in asyncio.as_completed(coros):
-                if await coro:
-                    return True
+        for domain in found_domains:
+            future_group.schedule(lambda: check_url(url_registered_domain, domain))
+
+        if future_group.contains_true_futures():
+            return True
 
         # If no match, no results yet
         return False
