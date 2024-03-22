@@ -1,5 +1,3 @@
-import asyncio
-import concurrent.futures
 import hashlib
 import itertools
 import os
@@ -77,7 +75,7 @@ class DST(DetectionMethod):
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from text search"
                 )
 
-                return ResultType.LEGITIMATE
+                # return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
             logo_finder = LogoFinder(
@@ -88,7 +86,7 @@ class DST(DetectionMethod):
 
             async def search_images():
                 urls = []
-                async for url in logo_finder.run(os.path.join(session_file_path, 'screen.png'), worker):
+                async for url in logo_finder.run(os.path.join(session_file_path, 'screen.png')):
                     urls.append(url)
                 return urls
             url_list_img = await search_images()
@@ -113,7 +111,7 @@ class DST(DetectionMethod):
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
 
-            future_group: FutureGroup = worker.new_future_group()
+            # future_group: FutureGroup = worker.new_future_group()
 
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
@@ -173,11 +171,7 @@ async def check_search_results(url_registered_domain, found_domains, worker: Thr
         for domain in found_domains:
             future_group.schedule(lambda: check_url(url_registered_domain, domain))
 
-        if future_group.contains_true_futures():
-            return True
-
-        # If no match, no results yet
-        return False
+        return future_group.any()
 
 
 def check_url(url_registered_domain, domain) -> bool:

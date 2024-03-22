@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 
 import utils.region_detection as region_detection
 from search_engines.image.base import ReverseImageSearchEngine
-from utils.async_threads import FutureGroup, ThreadWorker
+from utils.async_threads import ThreadWorker
 from utils.logging import main_logger
 from utils.region_detection import RegionData
 from utils.timing import TimeIt
@@ -20,6 +20,7 @@ class LogoFinder:
     clf_logo: LogisticRegression = None
 
     _logger = main_logger.getChild('utils.reverse_image_search')
+    worker = ThreadWorker()
 
     def __init__(
         self,
@@ -31,7 +32,7 @@ class LogoFinder:
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
-    async def run(self, img_path: str, worker: ThreadWorker) -> AsyncIterator[str]:
+    async def run(self, img_path: str) -> AsyncIterator[str]:
         """
         Attempts to find logos (and their origins) in the image specified by the given path.
 
@@ -51,7 +52,7 @@ class LogoFinder:
             # For each reverse image search engine, try to find the origin of each logo region
             with TimeIt(f'Logo reverse image search using {revimg_search_engine.name}'):
                 try:
-                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine, worker):
+                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine):
                         yield res
 
                 except Exception:
@@ -111,7 +112,7 @@ class LogoFinder:
         except Exception:
             self._logger.error(f'Exception while finding regions for img_path {img_path}', exc_info=True)
 
-    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine, worker: ThreadWorker) -> AsyncIterator[str]:
+    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
         """
         Find the origin of the 3 highest-logo-probability regions, using the given search engine.
         """
@@ -119,7 +120,7 @@ class LogoFinder:
         # Sort region predictions by logo probability, in descending order
         logo_probas.sort(key=lambda t: t[1], reverse=True)
 
-        future_group: FutureGroup = worker.new_future_group()
+        future_group = self.worker.new_future_group()
 
         region_count = 0
         for region_data, logo_proba in logo_probas:
