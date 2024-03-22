@@ -1,3 +1,4 @@
+import threading
 from collections.abc import AsyncIterator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 
@@ -18,7 +19,7 @@ class FutureGroup:
         self.scheduled_futures.append(scheduled_future)
         return scheduled_future
 
-    def get_scheduled_futures(self) -> list[Future]: # Using concurrent.futures.Future as it is thread safe.
+    def get_scheduled_futures(self) -> list[Future]:
         return self.scheduled_futures
     
     def get_array_results(self) -> list:
@@ -31,8 +32,7 @@ class FutureGroup:
         for future in self.scheduled_futures:
             future.cancel()
     
-    # Change to be more reusable with 'any' containing comparison to argument
-    def any(self, f) -> bool:
+    def any(self, f = lambda x: x) -> bool:
         for future in as_completed(self.scheduled_futures):
             if f(future.result()):
                 return True
@@ -47,15 +47,41 @@ class ThreadWorker:
     Thread worker handling running tasks concurrently. FutureGroup should be used to schedule tasks and get the results.
     """
     executor: ThreadPoolExecutor
+    preprocessor = None
+    threadlocal: threading.local
 
-    def __init__(self):
-        self.executor = ThreadPoolExecutor() # Standard amount of workers is fine (Logical CPU's + 4)
-    
+    def __init__(self, init = None, preprocessor = None):
+        self.threadlocal = threading.local()
+        if init is not None:
+            def initwrap():
+                self.threadlocal.mydata = init()
+        else:
+            initwrap = None
+        self.executor = ThreadPoolExecutor(initializer=initwrap) # Standard amount of workers is fine (Logical CPU's + 4)
+        self.preprocessor = preprocessor
+
     def new_future_group(self) -> FutureGroup:
         return FutureGroup(self)
     
     def run_task(self, task) -> Future:
-        return self.executor.submit(task)
+        def task_wrapper():
+            print('localdata', self.threadlocal.__dict__)
+            if 'mydata' in self.threadlocal.__dict__:
+                localdata = self.threadlocal.mydata
+            else:
+                localdata = None
+
+            if self.preprocessor is not None:
+                if localdata is not None:
+                    return self.preprocessor(localdata, *task)
+                else:
+                    return self.preprocessor(*task)
+            else:
+                if self.preprocessor is None:
+                    return task()
+                else:
+                    return task(localdata)
+        return self.executor.submit(task_wrapper)
     
     def close(self):
         self.executor.shutdown()

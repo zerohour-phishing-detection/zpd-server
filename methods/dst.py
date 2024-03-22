@@ -15,7 +15,7 @@ from utils import domains
 from utils.async_threads import FutureGroup, ThreadWorker
 from utils.logging import main_logger
 from utils.result import ResultType
-from utils.screenshot import screenshotter
+from utils.screenshot import ScreenShotter, screenshotter
 from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
@@ -30,6 +30,7 @@ LOGO_FINDER = 2
 
 # Thread worker instance shared for different concurrent parts
 worker = ThreadWorker()
+screenshot_worker = ThreadWorker(init=lambda: ScreenShotter(), preprocessor=lambda ss, *args: check_image(ss=ss, *args))
 
 # Instantiate a logger for this detection method
 logger = main_logger.getChild('methods.dst')
@@ -79,7 +80,7 @@ class DST(DetectionMethod):
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from text search"
                 )
 
-                # return ResultType.LEGITIMATE
+                return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
             if LOGO_FINDER == 1:
@@ -118,15 +119,15 @@ class DST(DetectionMethod):
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
 
-            future_group: FutureGroup = worker.new_future_group()
+            screenshot_group: FutureGroup = screenshot_worker.new_future_group()
 
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
-                future_group.schedule(lambda: check_image(out_dir, index, session_file_path, resulturl) == ResultType.PHISHING)
-                    
-            if future_group.any(id): # Match for found images, so conclude as phishing
+                screenshot_group.schedule([out_dir, index, session_file_path, resulturl])
+
+            if screenshot_group.any(): # Match for found images, so conclude as phishing
                 logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
-                future_group.cancel()
+                screenshot_group.cancel()
                 return ResultType.PHISHING
 
         # If the inconclusive stems from google blocking:
@@ -139,13 +140,13 @@ class DST(DetectionMethod):
         return ResultType.INCONCLUSIVE
 
 
-def check_image(out_dir, index, session_file_path, resulturl):
+def check_image(out_dir, index, session_file_path, resulturl, ss = screenshotter):
     path_a = os.path.join(session_file_path, "screen.png")
     path_b = os.path.join(out_dir, f'{index}.png')
       
     # Take screenshot of URL and save it
     try:
-        screenshotter.save_screenshot(resulturl, path_b)
+        ss.save_screenshot(resulturl, path_b)
     except Exception as e:
         logger.warning(f"Error taking screenshot of {resulturl}: {str(e)}")
         return False
@@ -163,13 +164,16 @@ def check_image(out_dir, index, session_file_path, resulturl):
     except Exception:
         logger.exception("Error calculating structural_sim")
 
-    logger.info(f"Compared url '{resulturl}'")
-    logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
+    
 
     if ((emd < 0.001) and (s_sim > 0.70)) or ((emd < 0.002) and (s_sim > 0.80)):
-        return True
+        b = True
 
-    return False
+    b = False
+
+    logger.info(f"Finished Comparing url '{resulturl},' emd = '{emd}', structural_sim = '{s_sim}': {b}")
+
+    return b
 
 
 async def check_search_results(url_registered_domain, found_domains, worker: ThreadWorker) -> bool:
@@ -179,7 +183,7 @@ async def check_search_results(url_registered_domain, found_domains, worker: Thr
         for domain in found_domains:
             future_group.schedule(lambda: check_url(url_registered_domain, domain))
 
-        return future_group.any(id)
+        return future_group.any()
 
 
 def check_url(url_registered_domain, domain) -> bool:
