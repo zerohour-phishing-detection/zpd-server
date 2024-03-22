@@ -34,8 +34,17 @@ Then, there are several steps to test the scripts:
 - [check-classifiers.py](script/check-classifiers.py) and [hit-verifier.py](script/hit-verifier.py) are middleware to pre-process `output_operational.db` for the evaluation
 - [ROC.py](script/ROC.py) carries out the final evaluation with two databases as input ('phishing' and 'benign')
 
-## Ready to run VM
-A ready to run deployment is available as an OVA image for VirtualBox [here](https://surfdrive.surf.nl/files/index.php/s/88nDPEFemrKmwCg) (Ubuntu 20).
+## Google Cloud Vision setup
+To be able to use Google Cloud Vision Logo Detection (based in `vision_logo_detection.py`),
+you need to add a `.gcloud_creds.json` file, containing a service account key to a Google Cloud Service Account.
+
+### Obtaining Google Cloud Credentials
+If you've just started working on this project and noone else has set up Google Cloud yet, you can follow these steps.
+1. Sign up for [Google Cloud Free Trial](https://console.cloud.google.com/freetrial). This requires a credit card, but you will not be deducted any money from it. Keep in mind that using a virtual credit card and with a fresh Google account may not work, as you may get an error message (likely because of fraud prevention).
+2. Make a project, or just use the initial empty project if you don't plan on using Google Cloud for anything else.
+3. Make a Service account (Navigation menu > IAM and admin > Service accounts). No permissions need to be granted. No users need to be granted access.
+4. Create keys for the service account (click account > open 'keys' tab), in JSON format. For security purposes, do not share your key with other people, instead make new keys for your fellow developers. If you want, you can also create a service account per developer, that way you can track API usage per person.
+5. Keep in mind that this method of providing credentials is the least recommended of all ways Google Cloud allows you to identify, and it is only recommended for a development environment. If you wish to create a proper production setup, see the [Google Cloud docs](https://cloud.google.com/docs/authentication).
 
 ## Acknowledgment:
 The authors wish to express their gratitude to Ardela Isuf and Sam Cantineau for their work in this project.

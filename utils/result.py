@@ -19,7 +19,6 @@ class ResultType(Enum):
             return "inconclusive"
         if result == ResultType.PHISHING:
             return "phishing"
-        raise ValueError("Unknown result type")
 
 
 # TODO overlaps with State in sessions.py, merge them or sth
@@ -36,7 +35,7 @@ class DetectionResult:
         self.status = status
         self.result = result
 
-    def to_json_str(self):
+    def to_json_str(self) -> str:
         # TODO rename status to phase (over the whole codebase)
         obj = {
             "url": self.url,
@@ -48,7 +47,7 @@ class DetectionResult:
         return json.dumps(obj)
 
     # DEPRECATED
-    def to_json_str_old(self):
+    def to_json_str_old(self) -> str:
         old_result = ResultType.to_old(self.result)
         obj = [{"url": self.url, "status": old_result, "sha1": self.url_hash}]
         return json.dumps(obj)
