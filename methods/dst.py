@@ -47,7 +47,7 @@ class DST(DetectionMethod):
 
         session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
 
-        with TimeIt("taking screenshot"):
+        with TimeIt("taking screenshot of " + url):
             # Take screenshot of requested page
             screenshot_path = os.path.join(session_file_path, 'screen.png')
             try:
@@ -111,14 +111,15 @@ class DST(DetectionMethod):
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
 
-            # future_group: FutureGroup = worker.new_future_group()
+            future_group: FutureGroup = worker.new_future_group()
 
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
                 future_group.schedule(lambda: check_image(out_dir, index, session_file_path, resulturl) == ResultType.PHISHING)
                     
-            if future_group.contains_true_futures(): # Match for found images, so conclude as phishing
+            if future_group.any(id): # Match for found images, so conclude as phishing
                 logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
+                future_group.cancel()
                 return ResultType.PHISHING
 
         # If the inconclusive stems from google blocking:
@@ -171,7 +172,7 @@ async def check_search_results(url_registered_domain, found_domains, worker: Thr
         for domain in found_domains:
             future_group.schedule(lambda: check_url(url_registered_domain, domain))
 
-        return future_group.any()
+        return future_group.any(id)
 
 
 def check_url(url_registered_domain, domain) -> bool:

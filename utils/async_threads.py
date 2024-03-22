@@ -27,10 +27,14 @@ class FutureGroup:
             results.append(future)
         return results
     
+    def cancel(self):
+        for future in self.scheduled_futures:
+            future.cancel()
+    
     # Change to be more reusable with 'any' containing comparison to argument
-    def any(self) -> bool:
+    def any(self, f) -> bool:
         for future in as_completed(self.scheduled_futures):
-            if future.result():
+            if f(future.result()):
                 return True
         return False
 
