@@ -23,27 +23,20 @@ class FutureGroup:
     
     def get_array_results(self) -> list:
         results = []
-        while len(self.scheduled_futures) > 0:
-            for result in self.scheduled_futures:
-                if result.done():
-                    results.append(result)
-                    self.scheduled_futures.remove(result)
+        for future in as_completed(self.scheduled_futures):
+            results.append(future)
         return results
     
-    def contains_true_futures(self) -> bool:
-        while len(self.scheduled_futures) > 0:
-            for result in self.scheduled_futures:
-                if result.done():
-                    if result:
-                        print("TRUE: ", result)
-                        return True
-                    self.scheduled_futures.remove(result)
-        print("FALSE")
+    # Change to be more reusable with 'any' containing comparison to argument
+    def any(self) -> bool:
+        for future in as_completed(self.scheduled_futures):
+            if future.result():
+                return True
         return False
 
-    def yield_results(self): #-> AsyncIterator: # what is return type?
-        for result in as_completed(self.scheduled_futures):
-            yield result
+    async def generate(self) -> AsyncIterator:
+        for future in as_completed(self.scheduled_futures):
+            yield future.result()
 
 class ThreadWorker:
     """

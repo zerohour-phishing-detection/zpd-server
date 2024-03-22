@@ -133,9 +133,9 @@ class LogoFinder:
             if region_count >= 3:
                 break
         
-        for future in future_group.get_scheduled_futures():
+        async for results in future_group.generate():
             searchres_count = 0
-            for res in await future:
+            for res in results:
                 # Limit to the first 7 search results
                 if searchres_count >= 7:
                     break
