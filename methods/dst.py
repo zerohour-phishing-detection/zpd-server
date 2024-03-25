@@ -185,7 +185,6 @@ async def check_search_results(url_registered_domain, found_domains, worker: Thr
 
         return future_group.any()
 
-
 def check_url(url_registered_domain, domain) -> bool:
     # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
     try:

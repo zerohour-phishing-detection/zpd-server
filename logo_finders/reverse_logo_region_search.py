@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 
+from aiostream import pipe, stream
 from requests_html import HTMLSession
 from sklearn.linear_model import LogisticRegression
 
@@ -107,7 +108,7 @@ class ReverseLogoRegionSearch(LogoFinder):
         except Exception:
             self._logger.error(f'Exception while finding regions for img_path {img_path}', exc_info=True)
 
-    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
+    def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
         """
         Find the origin of the 3 highest-logo-probability regions, using the given search engine.
         """
@@ -128,11 +129,4 @@ class ReverseLogoRegionSearch(LogoFinder):
             if region_count >= 3:
                 break
         
-        async for results in future_group.generate():
-            searchres_count = 0
-            for res in results:
-                # Limit to the first 7 search results
-                if searchres_count >= 7:
-                    break
-                yield res
-                searchres_count += 1
+        return stream.flatmap(future_group.generate(), lambda res: stream.iterate(res) | pipe.take(7))
