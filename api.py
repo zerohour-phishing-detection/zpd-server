@@ -16,6 +16,9 @@ nest_asyncio.apply()
 # The storage interface for the sessions
 session_storage = detection.session_storage
 
+# The storage interface for the settings per user
+settings_storage = detection.settings_storage
+
 # Instantiate a logger for this HTTP API
 logger = main_logger.getChild("api")
 

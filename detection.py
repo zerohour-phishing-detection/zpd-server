@@ -5,21 +5,30 @@ from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
+from utils.settings import SettingsStorage
 from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
 
-# Database path for the sessions
-DB_PATH_SESSIONS = "db/sessions.db"
 if not os.path.isdir("db"):
     os.mkdir("db")
+
+# Database path for the sessions
+DB_PATH_SESSIONS = "db/sessions.db"
+
+# Database path for the settings
+DB_PATH_SETTINGS = "db/settings.db"
 
 # The storage interface for the sessions
 session_storage = SessionStorage(DB_PATH_SESSIONS, False)
 
+# The storage interface for the settings per user
+settings_storage = SettingsStorage(DB_PATH_SETTINGS)
+
 # Instantiate a logger for the phishing detection
 logger = main_logger.getChild("detection")
+
 
 class DetectionSettings:
     detection_methods: list[str]
@@ -80,9 +89,7 @@ class DetectionData:
         return DetectionData(url, screenshot_url, uuid, pagetitle)
 
 
-def test(
-    data: DetectionData, settings: DetectionSettings = DetectionSettings()
-) -> DetectionResult:
+def test(data: DetectionData, settings: DetectionSettings = DetectionSettings()) -> DetectionResult:
     url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
 
     logger.info(f"""

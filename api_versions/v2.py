@@ -54,7 +54,3 @@ def get_available_capabilities():
         "decision_strategies": list(DECISION_STRATEGIES.keys()),
     }
     return jsonify(result)
-
-
-# @v2.route("/data", methods=["DELETE"])
-# def delete_data():

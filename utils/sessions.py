@@ -3,6 +3,10 @@ from datetime import datetime
 
 import tldextract
 
+from utils.logging import main_logger
+
+logger = main_logger.getChild("utils.sessions")
+
 
 # TODO make abstract? can allow for different kinds of storage (in-memory, sqlite database file, mysql database, etc)
 class SessionStorage:
@@ -15,11 +19,11 @@ class SessionStorage:
     shared = False
     storage = None
 
-    def __init__(self, db_file_path, shared=False):
+    def __init__(self, db_path, shared=False):
         self.shared = shared
-        self.storage = db_file_path
+        self.storage = db_path
 
-        storage_conn = sqlite3.connect(db_file_path)
+        storage_conn = sqlite3.connect(db_path)
         self._setup_storage(storage_conn)
 
         # Delete unfinished tasks on start-up
