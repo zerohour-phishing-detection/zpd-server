@@ -22,7 +22,7 @@ class FutureGroup:
     def get_scheduled_futures(self) -> list[Future]:
         return self.scheduled_futures
     
-    def get_array_results(self) -> list:
+    def get_results(self) -> list:
         results = []
         for future in as_completed(self.scheduled_futures):
             results.append(future)
@@ -45,6 +45,7 @@ class FutureGroup:
 class ThreadWorker:
     """
     Thread worker handling running tasks concurrently. FutureGroup should be used to schedule tasks and get the results.
+    Can be created with preprocessor for example to create objects to be used for each thread.
     """
     executor: ThreadPoolExecutor
     preprocessor = None
@@ -57,7 +58,7 @@ class ThreadWorker:
                 self.threadlocal.mydata = init()
         else:
             initwrap = None
-        self.executor = ThreadPoolExecutor(initializer=initwrap) # Standard amount of workers is fine (Logical CPU's + 4)
+        self.executor = ThreadPoolExecutor(initializer=initwrap)
         self.preprocessor = preprocessor
 
     def new_future_group(self) -> FutureGroup:
@@ -65,22 +66,15 @@ class ThreadWorker:
     
     def run_task(self, task) -> Future:
         def task_wrapper():
-            print('localdata', self.threadlocal.__dict__)
+            localdata = []
             if 'mydata' in self.threadlocal.__dict__:
-                localdata = self.threadlocal.mydata
-            else:
-                localdata = None
+                localdata = [self.threadlocal.mydata]
 
             if self.preprocessor is not None:
-                if localdata is not None:
-                    return self.preprocessor(localdata, *task)
-                else:
-                    return self.preprocessor(*task)
+                return self.preprocessor(*localdata, *task)
             else:
-                if self.preprocessor is None:
-                    return task()
-                else:
-                    return task(localdata)
+                return task(*localdata)
+            
         return self.executor.submit(task_wrapper)
     
     def close(self):
