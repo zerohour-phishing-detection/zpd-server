@@ -18,7 +18,7 @@ session_storage = detection.session_storage
 def check_url_old():
     json = request.get_json()
 
-    res = detection.test(DetectionData.from_json(json))
+    res = detection.check(DetectionData.from_json(json))
 
     return res.to_json_str_old()
 

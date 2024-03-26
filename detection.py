@@ -89,7 +89,7 @@ class DetectionData:
         return DetectionData(url, screenshot_url, uuid, pagetitle)
 
 
-def test(data: DetectionData, settings: DetectionSettings = DetectionSettings()) -> DetectionResult:
+def check(data: DetectionData, settings: DetectionSettings = DetectionSettings()) -> DetectionResult:
     url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
 
     logger.info(f"""

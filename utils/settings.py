@@ -1,4 +1,6 @@
+import json
 import sqlite3
+from datetime import datetime
 
 from utils.logging import main_logger
 
@@ -33,50 +35,72 @@ class DetectionSettings:
         return DetectionSettings(detection_methods, decision_strategy)
 
 
-class DetectionData:
-    url: str
-    screenshot_url: str
-    uuid: str
-    pagetitle: str
-
-    def __init__(
-        self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""
-    ):
-        self.url = url
-        self.screenshot_url = screenshot_url
-        self.uuid = uuid
-        self.pagetitle = pagetitle
-
-    @staticmethod
-    def from_json(json) -> "DetectionData":
-        url = json["URL"]
-        screenshot_url = json["URL"]
-
-        # extra json field for evaluation purposes
-        # the hash computed in the DB is the this one
-        if "phishURL" in json:  # TODO: only allow this on a testing environment, not prod
-            url = json["phishURL"]
-            logger.info(f"Real URL changed to phishURL: {url}\n")
-
-        pagetitle = json["pagetitle"]
-        uuid = json["uuid"]
-
-        return DetectionData(url, screenshot_url, uuid, pagetitle)
-
-
 class SettingsStorage:
+    db_path: str
+
     def __init__(self, db_path: str):
-        storage_conn = sqlite3.connect(db_path)
+        self.db_path = db_path
+        storage_conn = sqlite3.connect(self.db_path)
         self._setup_storage(storage_conn)
 
     def _setup_storage(self, storage_conn):
         sql_q_db = """
             CREATE TABLE IF NOT EXISTS "settings" (
                 "uuid"	string,
-                "settings" string
+                "settings" string,
+                "timestamp" string
             );"""
 
         storage_conn.execute(sql_q_db)
         storage_conn.commit()
+        storage_conn.close()
 
-    # def set_settings(uuid: str, settings: DetectionSettings):
+    def _get_settings(self, uuid: str) -> str:
+        storage_conn = sqlite3.connect(self.db_path)
+
+        cursor = storage_conn.execute("SELECT settings FROM settings WHERE uuid = ?", [uuid])
+        settings = cursor.fetchone()
+
+        storage_conn.close()
+
+        return settings
+
+    def get_settings(self, uuid: str) -> str:
+        settings = self._get_settings(uuid)
+
+        if self is None:
+            obj = {"error": "There are no saved settings for the given UUID!"}
+            return json.dumps(obj)
+
+        return settings
+
+    def set_settings(self, uuid: str, settings_json: object) -> str:
+        storage_conn = sqlite3.connect(self.db_path)
+
+        timestamp = datetime.now()
+        settings_json = json.dumps(settings_json)
+
+        obj = {}
+
+        try:
+            if self._get_settings(uuid) is None:
+                storage_conn.execute(
+                    "INSERT INTO settings (uuid, settings, timestamp) VALUES (?, ?, ?)",
+                    [uuid, settings_json, timestamp],
+                )
+                obj = {"result": "Succesfuly saved the settings to the server's database!"}
+
+            else:
+                storage_conn.execute(
+                    "UPDATE settings SET settings = ?, timestamp = ? WHERE uuid = ?",
+                    [settings_json, timestamp, uuid],
+                )
+                obj = {"result": "Succesfuly updated the settings!"}
+
+        except Exception as e:
+            obj = {"error": f"An error occured while saving the settings: {e}"}
+
+        storage_conn.commit()
+        storage_conn.close()
+
+        return json.dumps(obj)

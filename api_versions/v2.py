@@ -14,13 +14,16 @@ v2 = Blueprint("v2", import_name="v2")
 # The storage interface for the sessions
 session_storage = detection.session_storage
 
+# The storage interface for the settings per user
+settings_storage = detection.settings_storage
+
 
 @v2.route("/check", methods=["POST"])
 def check():
     json = request.get_json()
     data = DetectionData.from_json(json)
 
-    return detection.test(data).to_json_str()
+    return detection.check(data).to_json_str()
 
 
 @v2.route("/state", methods=["POST"])
@@ -37,14 +40,18 @@ def get_state():
     return jsonify(result)
 
 
+@v2.route("/settings", methods=["GET"])
+def get_settings():
+    # uuid = request.args.get("uuid")
+    # return settings_storage.get_settings(request.get_json())
+    return jsonify("a")
+
 @v2.route("/settings", methods=["POST"])
 def set_settings():
-    # json = request.get_json()
-    # uuid = json["uuid"]
-    # json_settings = json["settings"]
-
-    # TODO change return
-    return jsonify({"status": "success"})
+    json = request.get_json()
+    uuid = json["uuid"]
+    settings = json["settings"]
+    return settings_storage.set_settings(uuid, settings)
 
 
 @v2.route("/capabilities", methods=["GET"])
