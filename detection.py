@@ -5,7 +5,7 @@ from utils.logging import main_logger
 from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
-from utils.settings import SettingsStorage
+from utils.settings import DetectionSettings, SettingsStorage
 from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
@@ -28,34 +28,6 @@ settings_storage = SettingsStorage(DB_PATH_SETTINGS)
 
 # Instantiate a logger for the phishing detection
 logger = main_logger.getChild("detection")
-
-
-class DetectionSettings:
-    detection_methods: list[str]
-    decision_strategy: str
-    bypass_cache: bool
-
-    def __init__(
-        self,
-        detection_methods: list[str] = ["dst"],
-        decision_strategy: str = "majority",
-        bypass_cache: bool = False,
-    ):
-        self.detection_methods = detection_methods
-        self.decision_strategy = decision_strategy
-        self.bypass_cache = bypass_cache
-
-    @staticmethod
-    def from_json(json):
-        detection_methods = json["detection-methods"]
-
-        decision_strategy = json["decision-strategy"]
-
-        if "bypass-cache" in json:
-            bypass_cache = json["bypass-cache"]
-            return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
-
-        return DetectionSettings(detection_methods, decision_strategy)
 
 
 class DetectionData:
@@ -89,7 +61,9 @@ class DetectionData:
         return DetectionData(url, screenshot_url, uuid, pagetitle)
 
 
-def check(data: DetectionData, settings: DetectionSettings = DetectionSettings()) -> DetectionResult:
+def check(
+    data: DetectionData, settings: DetectionSettings = DetectionSettings()
+) -> DetectionResult:
     url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
 
     logger.info(f"""
