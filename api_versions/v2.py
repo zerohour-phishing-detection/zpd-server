@@ -42,9 +42,9 @@ def get_state():
 
 @v2.route("/settings", methods=["GET"])
 def get_settings():
-    # uuid = request.args.get("uuid")
-    # return settings_storage.get_settings(request.get_json())
-    return jsonify("a")
+    json = request.get_json()
+    uuid = json["uuid"]
+    return settings_storage.get_settings(uuid)
 
 @v2.route("/settings", methods=["POST"])
 def set_settings():

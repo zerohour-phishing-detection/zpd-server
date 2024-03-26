@@ -63,6 +63,9 @@ class SettingsStorage:
 
         storage_conn.close()
 
+        if settings is not None:
+            return settings[0]
+
         return settings
 
     def get_settings(self, uuid: str) -> str:
@@ -72,13 +75,14 @@ class SettingsStorage:
             obj = {"error": "There are no saved settings for the given UUID!"}
             return json.dumps(obj)
 
+        print(settings)
         return settings
 
-    def set_settings(self, uuid: str, settings_json: object) -> str:
+    def set_settings(self, uuid: str, settings: object) -> str:
         storage_conn = sqlite3.connect(self.db_path)
 
         timestamp = datetime.now()
-        settings_json = json.dumps(settings_json)
+        settings_json = json.dumps(settings)
 
         obj = {}
 
