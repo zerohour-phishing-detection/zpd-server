@@ -3,6 +3,7 @@ import itertools
 import os
 
 import joblib
+from aiostream import pipe, stream
 from requests_html import HTMLSession
 
 import utils.classifiers as cl
@@ -123,6 +124,7 @@ class DST(DetectionMethod):
 
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
+                # Schedule operation check_image() with the following arguments
                 screenshot_group.schedule([out_dir, index, session_file_path, resulturl])
 
             if screenshot_group.any(): # Match for found images, so conclude as phishing
@@ -136,11 +138,15 @@ class DST(DetectionMethod):
 
         logger.info(f"[RESULT] Inconclusive, for url {url}")
 
-        worker.close()
         return ResultType.INCONCLUSIVE
 
 
 def check_image(out_dir, index, session_file_path, resulturl, ss = screenshotter):
+    """
+    Compare images, of a screenshot that will be taken of resulturl using the screenshotter,
+    with the stored screenshot at the session_file_path.
+    Results in either True or False, about being similar using structural similarity with low enough earth moving distance.
+    """
     path_a = os.path.join(session_file_path, "screen.png")
     path_b = os.path.join(out_dir, f'{index}.png')
       
@@ -167,8 +173,10 @@ def check_image(out_dir, index, session_file_path, resulturl, ss = screenshotter
     
 
     if ((emd < 0.001) and (s_sim > 0.70)) or ((emd < 0.002) and (s_sim > 0.80)):
+        # Image comparison does conclude being similar
         b = True
 
+    # Image comparison could not conclude similarity
     b = False
 
     logger.info(f"Finished Comparing url '{resulturl},' emd = '{emd}', structural_sim = '{s_sim}': {b}")

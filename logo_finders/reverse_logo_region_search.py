@@ -111,6 +111,7 @@ class ReverseLogoRegionSearch(LogoFinder):
     def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
         """
         Find the origin of the 3 highest-logo-probability regions, using the given search engine.
+        Uses async threads to concurrenlty find logo origin.
         """
 
         # Sort region predictions by logo probability, in descending order
