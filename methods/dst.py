@@ -13,7 +13,7 @@ from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
-from utils.async_threads import FutureGroup, ThreadWorker
+from utils.async_threads import FutureGroup, ThreadWorker, async_first
 from utils.logging import main_logger
 from utils.result import ResultType
 from utils.screenshot import ScreenShotter, screenshotter
@@ -31,7 +31,7 @@ LOGO_FINDER = 2
 
 # Thread worker instance shared for different concurrent parts
 worker = ThreadWorker()
-screenshot_worker = ThreadWorker(init=lambda: ScreenShotter(), preprocessor=lambda ss, *args: check_image(ss=ss, *args))
+screenshot_worker = ThreadWorker(init=lambda: ScreenShotter(), preprocessor=lambda task, ss: (task[3], task[1], check_image(ss=ss, *task)))
 
 # Instantiate a logger for this detection method
 logger = main_logger.getChild('methods.dst')
@@ -127,7 +127,10 @@ class DST(DetectionMethod):
                 # Schedule operation check_image() with the following arguments
                 screenshot_group.schedule([out_dir, index, session_file_path, resulturl])
 
-            if screenshot_group.any(): # Match for found images, so conclude as phishing
+            resulturl, index, b = await async_first(stream.iterate(screenshot_group.generate()) | pipe.filter(lambda xs: xs[2]) | pipe.take(1), (None, None, False))
+
+            if b:
+                # if screenshot_group.any(f=lambda xs: xs[2]): # Match for found images, so conclude as phishing
                 logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
                 screenshot_group.cancel()
                 return ResultType.PHISHING

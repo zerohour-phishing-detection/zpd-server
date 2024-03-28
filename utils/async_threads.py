@@ -47,7 +47,7 @@ class FutureGroup:
     
     def any(self, f = lambda x: x) -> bool:
         """
-        In order of completion, checking for function return true on ANY result. 
+        In order of completion, checking for function return true on ANY result.
         Returning this boolean.
         """
         for future in as_completed(self.scheduled_futures):
@@ -72,8 +72,10 @@ class ThreadWorker:
     preprocessor = None
     threadlocal: threading.local
 
-    def __init__(self, init = None, preprocessor = None):
+    def __init__(self, init = None, preprocessor = lambda task, *localdata: task(*localdata)):
         self.threadlocal = threading.local()
+        # Use custom initializer for using localdata on local thread.
+        # For example the localdata can be a class used on each thread.
         if init is not None:
             def initwrap():
                 self.threadlocal.mydata = init()
@@ -90,20 +92,27 @@ class ThreadWorker:
     
     def run_task(self, task) -> Future:
         """
-        Apply the preprocessor with localdata on the task. 
+        Apply the preprocessor with localdata on the task.
         Using the executor the task is run, returning a future.
         """
         def task_wrapper():
+            # localdata is put from potential dictionary to array,
+            # such that it can be expended as argument possibly empty.
             localdata = []
             if 'mydata' in self.threadlocal.__dict__:
                 localdata = [self.threadlocal.mydata]
 
-            if self.preprocessor is not None:
-                return self.preprocessor(*localdata, *task)
-            else:
-                return task(*localdata)
+            return self.preprocessor(task, *localdata)
             
         return self.executor.submit(task_wrapper)
     
     def close(self):
         self.executor.shutdown()
+
+async def async_first(agen, default=None):
+    """
+    Get first element of async generator, if empty return default or None.
+    """
+    async for x in agen:
+        return x
+    return default
