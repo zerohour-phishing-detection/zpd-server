@@ -9,6 +9,7 @@ from flask import Flask, render_template
 import detection
 from api_versions.v1 import v1
 from api_versions.v2 import v2
+from api_versions.v3 import v3
 from utils.logging import main_logger
 
 nest_asyncio.apply()
@@ -38,6 +39,7 @@ def shutdown_server():
 
 app.register_blueprint(v1, url_prefix="/api/v1")
 app.register_blueprint(v2, url_prefix="/api/v2")
+app.register_blueprint(v3, url_prefix="/api/v3")
 
 
 # Handle CTRL+C for shutdown
