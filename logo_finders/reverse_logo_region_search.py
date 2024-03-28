@@ -1,11 +1,13 @@
 from collections.abc import AsyncIterator
 
+from aiostream import pipe, stream
 from requests_html import HTMLSession
 from sklearn.linear_model import LogisticRegression
 
 import utils.region_detection as region_detection
 from logo_finders.base import LogoFinder
 from search_engines.image.base import ReverseImageSearchEngine
+from utils.async_threads import ThreadWorker
 from utils.logging import main_logger
 from utils.region_detection import RegionData
 from utils.timing import TimeIt
@@ -21,6 +23,7 @@ class ReverseLogoRegionSearch(LogoFinder):
     clf_logo: LogisticRegression = None
 
     _logger = main_logger.getChild('utils.reverse_image_search')
+    worker = ThreadWorker()
 
     def __init__(
         self,
@@ -105,29 +108,26 @@ class ReverseLogoRegionSearch(LogoFinder):
         except Exception:
             self._logger.error(f'Exception while finding regions for img_path {img_path}', exc_info=True)
 
-    async def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
+    def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
         """
         Find the origin of the 3 highest-logo-probability regions, using the given search engine.
+        Uses async threads to concurrenlty find logo origin.
         """
 
         # Sort region predictions by logo probability, in descending order
         logo_probas.sort(key=lambda t: t[1], reverse=True)
 
+        future_group = self.worker.new_future_group()
+
         region_count = 0
-        # TODO: concurrency here
         for region_data, logo_proba in logo_probas:
             self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
 
-            searchres_count = 0
-            for res in revimg_search_engine.query(region_data.region):
-                yield res
-
-                # Limit to the first 7 search results
-                searchres_count += 1
-                if searchres_count >= 7:
-                    break
+            future_group.schedule(lambda: revimg_search_engine.query(region_data.region))
 
             # Limit to the top 3 regions
             region_count += 1
             if region_count >= 3:
                 break
+        
+        return stream.flatmap(future_group.generate(), lambda res: stream.iterate(res) | pipe.take(7))

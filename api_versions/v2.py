@@ -21,9 +21,10 @@ settings_storage = detection.settings_storage
 @v2.route("/check", methods=["POST"])
 def check():
     json = request.get_json()
+    uuid = json["uuid"]
     data = DetectionData.from_json(json)
 
-    return detection.check(data).to_json_str()
+    return detection.check(uuid, data).to_json_str()
 
 
 @v2.route("/state", methods=["POST"])

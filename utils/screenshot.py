@@ -35,6 +35,7 @@ class ScreenShotter:
         self.driver = webdriver.Chrome(options=options)
         self.driver.set_window_size(*window_size)
         self.driver.set_page_load_timeout(15)
+
     
     def _visit(self, url: str):
         """

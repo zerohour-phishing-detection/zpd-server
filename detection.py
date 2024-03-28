@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import os
 
@@ -35,9 +36,7 @@ class DetectionData:
     screenshot_url: str
     pagetitle: str
 
-    def __init__(
-        self, url: str = "", screenshot_url: str = "", pagetitle: str = ""
-    ):
+    def __init__(self, url: str = "", screenshot_url: str = "", pagetitle: str = ""):
         self.url = url
         self.screenshot_url = screenshot_url
         self.pagetitle = pagetitle
@@ -97,7 +96,9 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
     for method in settings.detection_methods:
         logger.info(f"Started running method {method}")
         results.append(
-            DETECTION_METHODS[method].run(data.url, data.screenshot_url, uuid, data.pagetitle)
+            asyncio.run(
+                DETECTION_METHODS[method].run(data.url, data.screenshot_url, uuid, data.pagetitle)
+            )
         )
 
     result = DECISION_STRATEGIES[settings.decision_strategy].decide(results)

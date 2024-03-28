@@ -1,10 +1,9 @@
-import asyncio
-import concurrent.futures
 import hashlib
 import itertools
 import os
 
 import joblib
+from aiostream import pipe, stream
 from requests_html import HTMLSession
 
 import utils.classifiers as cl
@@ -14,9 +13,10 @@ from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
 from utils import domains
+from utils.async_threads import FutureGroup, ThreadWorker, async_first
 from utils.logging import main_logger
 from utils.result import ResultType
-from utils.screenshot import screenshotter
+from utils.screenshot import ScreenShotter, screenshotter
 from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
@@ -28,6 +28,10 @@ WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 # Which logo finder to use, 1 for `reverse_logo_region_search`, 2 for `vision_logo_detection`
 LOGO_FINDER = 2
 
+
+# Thread worker instance shared for different concurrent parts
+worker = ThreadWorker()
+screenshot_worker = ThreadWorker(init=lambda: ScreenShotter(), preprocessor=lambda task, ss: (task[3], task[1], check_image(ss=ss, *task)))
 
 # Instantiate a logger for this detection method
 logger = main_logger.getChild('methods.dst')
@@ -41,7 +45,7 @@ logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib
 
 
 class DST(DetectionMethod):
-    def run(self, url, screenshot_url, uuid, pagetitle, image64 = "") -> ResultType:
+    async def run(self, url, screenshot_url, uuid, pagetitle, image64 = "") -> ResultType:
         url_domain = domains.get_hostname(url)
         url_registered_domain = domains.get_registered_domain(url_domain)
 
@@ -49,7 +53,7 @@ class DST(DetectionMethod):
 
         session_file_path = os.path.join(SESSION_FILE_STORAGE_PATH, url_hash)
 
-        with TimeIt("taking screenshot"):
+        with TimeIt("taking screenshot of " + url):
             # Take screenshot of requested page
             screenshot_path = os.path.join(session_file_path, 'screen.png')
             try:
@@ -72,7 +76,7 @@ class DST(DetectionMethod):
             main_logger.debug(f'domains found: {domain_list_text}')
 
             # Handle results of search from above
-            if asyncio.run(check_search_results(url_registered_domain, domain_list_text)):
+            if await check_search_results(url_registered_domain, domain_list_text, worker):
                 logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from text search"
                 )
@@ -94,7 +98,7 @@ class DST(DetectionMethod):
                 async for url in logo_finder.find(os.path.join(session_file_path, 'screen.png')):
                     urls.append(url)
                 return urls
-            url_list_img = asyncio.run(search_images())
+            url_list_img = await search_images()
 
             # Get all unique non-checked domains from URLs
             domain_list_img = set([domains.get_hostname(url) for url in url_list_img])
@@ -105,7 +109,7 @@ class DST(DetectionMethod):
             main_logger.debug(f'domains found: {domain_list_img}')
 
             # Handle results
-            if asyncio.run(check_search_results(url_registered_domain, domain_list_img)):
+            if await check_search_results(url_registered_domain, domain_list_img, worker):
                 logger.info(
                     f"[RESULT] Not phishing, for url {url}, due to registered domain validation from reverse image search"
                 )
@@ -116,14 +120,20 @@ class DST(DetectionMethod):
         with TimeIt("image comparisons"):
             out_dir = os.path.join("compare_screens", url_hash)
 
-            # TODO: implement concurrency
+            screenshot_group: FutureGroup = screenshot_worker.new_future_group()
+
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
-                if check_image(out_dir, index, session_file_path, resulturl):
-                    # Match for found images, so conclude as phishing
-                    logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
+                # Schedule operation check_image() with the following arguments
+                screenshot_group.schedule([out_dir, index, session_file_path, resulturl])
 
-                    return ResultType.PHISHING
+            resulturl, index, b = await async_first(stream.iterate(screenshot_group.generate()) | pipe.filter(lambda xs: xs[2]) | pipe.take(1), (None, None, False))
+
+            if b:
+                # if screenshot_group.any(f=lambda xs: xs[2]): # Match for found images, so conclude as phishing
+                logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
+                screenshot_group.cancel()
+                return ResultType.PHISHING
 
         # If the inconclusive stems from google blocking:
         #   e.g. blocked == True
@@ -134,13 +144,18 @@ class DST(DetectionMethod):
         return ResultType.INCONCLUSIVE
 
 
-def check_image(out_dir, index, session_file_path, resulturl):
+def check_image(out_dir, index, session_file_path, resulturl, ss = screenshotter):
+    """
+    Compare images, of a screenshot that will be taken of resulturl using the screenshotter,
+    with the stored screenshot at the session_file_path.
+    Results in either True or False, about being similar using structural similarity with low enough earth moving distance.
+    """
     path_a = os.path.join(session_file_path, "screen.png")
     path_b = os.path.join(out_dir, f'{index}.png')
       
     # Take screenshot of URL and save it
     try:
-        screenshotter.save_screenshot(resulturl, path_b)
+        ss.save_screenshot(resulturl, path_b)
     except Exception as e:
         logger.warning(f"Error taking screenshot of {resulturl}: {str(e)}")
         return False
@@ -158,32 +173,28 @@ def check_image(out_dir, index, session_file_path, resulturl):
     except Exception:
         logger.exception("Error calculating structural_sim")
 
-    logger.info(f"Compared url '{resulturl}'")
-    logger.info(f"Finished comparing:  emd = '{emd}', structural_sim = '{s_sim}'")
+    
 
     if ((emd < 0.001) and (s_sim > 0.70)) or ((emd < 0.002) and (s_sim > 0.80)):
-        return True
+        # Image comparison does conclude being similar
+        b = True
 
-    return False
+    # Image comparison could not conclude similarity
+    b = False
+
+    logger.info(f"Finished Comparing url '{resulturl},' emd = '{emd}', structural_sim = '{s_sim}': {b}")
+
+    return b
 
 
-async def check_search_results(url_registered_domain, found_domains) -> bool:
+async def check_search_results(url_registered_domain, found_domains, worker: ThreadWorker) -> bool:
     with TimeIt("SAN domain check"):
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            loop = asyncio.get_running_loop()
-            coros = []
-            for domain in found_domains:
-                coros.append(
-                    loop.run_in_executor(pool, lambda: check_url(url_registered_domain, domain))
-                )
+        future_group: FutureGroup = worker.new_future_group()
 
-            for coro in asyncio.as_completed(coros):
-                if await coro:
-                    return True
+        for domain in found_domains:
+            future_group.schedule(lambda: check_url(url_registered_domain, domain))
 
-        # If no match, no results yet
-        return False
-
+        return future_group.any()
 
 def check_url(url_registered_domain, domain) -> bool:
     # Get the Subject Alternative Names (all associated domains, e.g. google.com, google.nl, google.de) for all websites
