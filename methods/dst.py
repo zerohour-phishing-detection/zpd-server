@@ -145,10 +145,8 @@ class DST(DetectionMethod):
             )
 
             if b:
-                # if screenshot_group.any(f=lambda xs: xs[2]): # Match for found images, so conclude as phishing
-                logger.info(
-                    f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}"
-                )
+                # Match for found images, so conclude as phishing
+                logger.info(f"[RESULT] Phishing, for url {url}, due to image comparisons with index {index}: {resulturl}")
                 screenshot_group.cancel()
                 return ResultType.PHISHING
 
@@ -208,7 +206,7 @@ async def check_search_results(url_registered_domain, found_domains, worker: Thr
         future_group: FutureGroup = worker.new_future_group()
 
         for domain in found_domains:
-            future_group.schedule(lambda: check_url(url_registered_domain, domain))
+            future_group.schedule((url_registered_domain, domain), (lambda url_registered_domain, domain: check_url(url_registered_domain, domain)))
 
         return future_group.any()
 

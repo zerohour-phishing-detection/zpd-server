@@ -14,12 +14,12 @@ class FutureGroup:
         self.scheduled_futures = []
         self.worker = worker
 
-    def schedule(self, task) -> Future:
+    def schedule(self, args, task) -> Future:
         """
         Schedule a task using the worker associated to this FutureGroup.
         Returnes scheduled future, also stores in scheduled futures in this class.
         """
-        scheduled_future = self.worker.run_task(task)
+        scheduled_future = self.worker.run_task(args, task)
         self.scheduled_futures.append(scheduled_future)
         return scheduled_future
 
@@ -72,7 +72,7 @@ class ThreadWorker:
     preprocessor = None
     threadlocal: threading.local
 
-    def __init__(self, init = None, preprocessor = lambda task, *localdata: task(*localdata)):
+    def __init__(self, init = None, preprocessor = lambda args, task, *localdata: task(*args, *localdata)):
         self.threadlocal = threading.local()
         # Use custom initializer for using localdata on local thread.
         # For example the localdata can be a class used on each thread.
@@ -81,7 +81,7 @@ class ThreadWorker:
                 self.threadlocal.mydata = init()
         else:
             initwrap = None
-        self.executor = ThreadPoolExecutor(initializer=initwrap)
+        self.executor = ThreadPoolExecutor(initializer=initwrap, max_workers=1)
         self.preprocessor = preprocessor
 
     def new_future_group(self) -> FutureGroup:
@@ -90,21 +90,21 @@ class ThreadWorker:
         """
         return FutureGroup(self)
     
-    def run_task(self, task) -> Future:
+    def run_task(self, args, task) -> Future:
         """
         Apply the preprocessor with localdata on the task.
         Using the executor the task is run, returning a future.
         """
-        def task_wrapper():
+        def task_wrapper(self, args, task):
             # localdata is put from potential dictionary to array,
             # such that it can be expended as argument possibly empty.
             localdata = []
             if 'mydata' in self.threadlocal.__dict__:
                 localdata = [self.threadlocal.mydata]
 
-            return self.preprocessor(task, *localdata)
+            return self.preprocessor(args, task, *localdata)
             
-        return self.executor.submit(task_wrapper)
+        return self.executor.submit(task_wrapper, self, args, task)
     
     def close(self):
         self.executor.shutdown()
