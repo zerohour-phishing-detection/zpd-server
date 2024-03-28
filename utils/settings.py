@@ -77,13 +77,13 @@ class SettingsStorage:
         settings_json = json.loads(settings_string)
         return settings_json
 
-    def set_settings(self, uuid: str, settings_json: object) -> object:
+    def set_settings(self, uuid: str, settings_json: object) -> bool:
         storage_conn = sqlite3.connect(self.db_path)
 
         timestamp = datetime.now()
         settings_str = json.dumps(settings_json)
 
-        obj = {}
+        ok = True
 
         try:
             if self._get_settings(uuid) is None:
@@ -91,19 +91,21 @@ class SettingsStorage:
                     "INSERT INTO settings (uuid, settings, timestamp) VALUES (?, ?, ?)",
                     [uuid, settings_str, timestamp],
                 )
-                obj = {"result": "Succesfuly saved the settings to the server's database!"}
+                # obj = {"message": "Succesfuly saved the settings to the server's database!"}
 
             else:
                 storage_conn.execute(
                     "UPDATE settings SET settings = ?, timestamp = ? WHERE uuid = ?",
                     [settings_str, timestamp, uuid],
                 )
-                obj = {"result": "Succesfuly updated the settings!"}
+                # obj = {"message": "Succesfuly updated the settings!"}
 
         except Exception as e:
-            obj = {"error": f"An error occured while saving the settings: {e}"}
+            logger.error(e)
+            ok = False
+        #     obj = {"error": f"An error occured while saving the settings: {e}"}
 
         storage_conn.commit()
         storage_conn.close()
 
-        return obj
+        return ok

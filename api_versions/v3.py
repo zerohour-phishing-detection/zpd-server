@@ -38,7 +38,7 @@ def get_state():
     status = session.get_state()
 
     if status is None:
-        return jsonify({"error": "No session found for this URL and UUID combination."})
+        return ("", 404)
 
     result = {"result": status.result, "state": status.state}
 
@@ -52,7 +52,7 @@ def get_settings():
     settings = settings_storage.get_settings(uuid)
 
     if settings is None:
-        return jsonify({"error": "There are no saved settings for the given UUID!"})
+        return ("", 404)
 
     return jsonify(settings_storage.get_settings(uuid))
 
@@ -61,7 +61,11 @@ def get_settings():
 def set_settings():
     uuid = request.cookies.get("uuid")
     json = request.get_json()
-    return jsonify(settings_storage.set_settings(uuid, json))
+
+    if not settings_storage.set_settings(uuid, json):
+        return ("", 400)
+
+    return ("", 200)
 
 
 @v3.route("/capabilities", methods=["GET"])
