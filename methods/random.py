@@ -1,7 +1,11 @@
 import random
 
 from methods import DetectionMethod
+from utils.logging import main_logger
 from utils.result import ResultType
+from utils.timing import TimeIt
+
+logger = main_logger.getChild("methods.random")
 
 
 class Random(DetectionMethod):
@@ -15,5 +19,10 @@ class Random(DetectionMethod):
         This method computes a random result.
         """
 
-        rand = random.randint(-1, 1)
-        return ResultType(rand)
+        with TimeIt("random detection method"):
+            rand = random.randint(-1, 1)
+            result = ResultType(rand)
+
+            logger.info(f"[RESULT] {result.name} due to randomness.")
+
+            return result
