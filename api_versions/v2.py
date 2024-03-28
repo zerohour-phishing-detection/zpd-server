@@ -44,14 +44,15 @@ def get_state():
 def get_settings():
     json = request.get_json()
     uuid = json["uuid"]
-    return settings_storage.get_settings(uuid)
+    return jsonify(settings_storage.get_settings(uuid))
+
 
 @v2.route("/settings", methods=["POST"])
 def set_settings():
     json = request.get_json()
     uuid = json["uuid"]
     settings = json["settings"]
-    return settings_storage.set_settings(uuid, settings)
+    return jsonify(settings_storage.set_settings(uuid, settings))
 
 
 @v2.route("/capabilities", methods=["GET"])

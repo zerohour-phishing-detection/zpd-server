@@ -23,13 +23,13 @@ class DetectionSettings:
         self.bypass_cache = bypass_cache
 
     @staticmethod
-    def from_json(json):
-        detection_methods = json["detection_methods"]
+    def from_json(settings_json: object) -> "DetectionSettings":
+        detection_methods = settings_json["detection_methods"]
 
-        decision_strategy = json["decision_strategy"]
+        decision_strategy = settings_json["decision_strategy"]
 
-        if "bypass-cache" in json:
-            bypass_cache = json["bypass-cache"]
+        if "bypass-cache" in settings_json:
+            bypass_cache = settings_json["bypass-cache"]
             return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
 
         return DetectionSettings(detection_methods, decision_strategy)
@@ -68,20 +68,21 @@ class SettingsStorage:
 
         return settings
 
-    def get_settings(self, uuid: str) -> str:
-        settings = self._get_settings(uuid)
+    def get_settings(self, uuid: str) -> object:
+        settings_string = self._get_settings(uuid)
 
         if self is None:
             obj = {"error": "There are no saved settings for the given UUID!"}
-            return json.dumps(obj)
+            return obj
 
-        return settings
+        settings_json = json.loads(settings_string)
+        return settings_json
 
-    def set_settings(self, uuid: str, settings: object) -> str:
+    def set_settings(self, uuid: str, settings_json: object) -> object:
         storage_conn = sqlite3.connect(self.db_path)
 
         timestamp = datetime.now()
-        settings_json = json.dumps(settings)
+        settings_str = json.dumps(settings_json)
 
         obj = {}
 
@@ -89,14 +90,14 @@ class SettingsStorage:
             if self._get_settings(uuid) is None:
                 storage_conn.execute(
                     "INSERT INTO settings (uuid, settings, timestamp) VALUES (?, ?, ?)",
-                    [uuid, settings_json, timestamp],
+                    [uuid, settings_str, timestamp],
                 )
                 obj = {"result": "Succesfuly saved the settings to the server's database!"}
 
             else:
                 storage_conn.execute(
                     "UPDATE settings SET settings = ?, timestamp = ? WHERE uuid = ?",
-                    [settings_json, timestamp, uuid],
+                    [settings_str, timestamp, uuid],
                 )
                 obj = {"result": "Succesfuly updated the settings!"}
 
@@ -106,4 +107,4 @@ class SettingsStorage:
         storage_conn.commit()
         storage_conn.close()
 
-        return json.dumps(obj)
+        return obj
