@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import os
 
@@ -119,7 +120,7 @@ def test(
     for method in settings.detection_methods:
         logger.info(f"Started running method {method}")
         results.append(
-            DETECTION_METHODS[method].run(data.url, data.screenshot_url, data.uuid, data.pagetitle)
+            asyncio.run(DETECTION_METHODS[method].run(data.url, data.screenshot_url, data.uuid, data.pagetitle))
         )
 
     result = DECISION_STRATEGIES[settings.decision_strategy].decide(results)
