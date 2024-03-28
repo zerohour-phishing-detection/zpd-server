@@ -72,8 +72,7 @@ class SettingsStorage:
         settings_string = self._get_settings(uuid)
 
         if settings_string is None:
-            obj = {"error": "There are no saved settings for the given UUID!"}
-            return obj
+            return
 
         settings_json = json.loads(settings_string)
         return settings_json

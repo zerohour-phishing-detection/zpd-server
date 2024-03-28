@@ -17,6 +17,7 @@ session_storage = detection.session_storage
 # The storage interface for the settings per user
 settings_storage = detection.settings_storage
 
+
 # TODO: Use jsonify instead for consistency
 @v3.route("/check", methods=["POST"])
 def check():
@@ -47,6 +48,12 @@ def get_state():
 @v3.route("/settings", methods=["GET"])
 def get_settings():
     uuid = request.cookies.get("uuid")
+
+    settings = settings_storage.get_settings(uuid)
+
+    if settings is None:
+        return jsonify({"error": "There are no saved settings for the given UUID!"})
+
     return jsonify(settings_storage.get_settings(uuid))
 
 
