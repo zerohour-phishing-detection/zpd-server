@@ -31,6 +31,7 @@ class ScreenShotter:
         )
 
         options.add_argument("--headless")
+        options.add_argument("--log-level=3")
 
         self.driver = webdriver.Chrome(options=options)
         self.driver.set_window_size(*window_size)
