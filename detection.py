@@ -33,21 +33,19 @@ logger = main_logger.getChild("detection")
 class DetectionData:
     url: str
     screenshot_url: str
-    uuid: str
     pagetitle: str
 
     def __init__(
-        self, url: str = "", screenshot_url: str = "", uuid: str = "", pagetitle: str = ""
+        self, url: str = "", screenshot_url: str = "", pagetitle: str = ""
     ):
         self.url = url
         self.screenshot_url = screenshot_url
-        self.uuid = uuid
         self.pagetitle = pagetitle
 
     @staticmethod
     def from_json(json) -> "DetectionData":
-        url = json["URL"]
-        screenshot_url = json["URL"]
+        url = json["url"]
+        screenshot_url = json["url"]
 
         # extra json field for evaluation purposes
         # the hash computed in the DB is the this one
@@ -56,14 +54,11 @@ class DetectionData:
             logger.info(f"Real URL changed to phishURL: {url}\n")
 
         pagetitle = json["pagetitle"]
-        uuid = json["uuid"]
 
-        return DetectionData(url, screenshot_url, uuid, pagetitle)
+        return DetectionData(url, screenshot_url, pagetitle)
 
 
-def check(
-    data: DetectionData, settings: DetectionSettings = DetectionSettings()
-) -> DetectionResult:
+def check(uuid: str, data: DetectionData) -> DetectionResult:
     url_hash = hashlib.sha256(data.url.encode("utf-8")).hexdigest()
 
     logger.info(f"""
@@ -72,11 +67,13 @@ def check(
 ##### Request received:
 #####   for URL:\t{data.url}
 #####   with hash:\t{url_hash}
-#####   from UUID:\t{data.uuid}
+#####   from UUID:\t{uuid}
 ##########################################################
 """)
+    session = session_storage.get_session(uuid, data.url)
+    settings_json = settings_storage.get_settings(uuid)
 
-    session = session_storage.get_session(data.uuid, data.url)
+    settings = DetectionSettings.from_json(settings_json)
 
     if not settings.bypass_cache:
         with TimeIt("cache check"):
@@ -100,7 +97,7 @@ def check(
     for method in settings.detection_methods:
         logger.info(f"Started running method {method}")
         results.append(
-            DETECTION_METHODS[method].run(data.url, data.screenshot_url, data.uuid, data.pagetitle)
+            DETECTION_METHODS[method].run(data.url, data.screenshot_url, uuid, data.pagetitle)
         )
 
     result = DECISION_STRATEGIES[settings.decision_strategy].decide(results)

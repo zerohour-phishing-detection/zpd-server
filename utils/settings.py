@@ -24,9 +24,9 @@ class DetectionSettings:
 
     @staticmethod
     def from_json(json):
-        detection_methods = json["detection-methods"]
+        detection_methods = json["detection_methods"]
 
-        decision_strategy = json["decision-strategy"]
+        decision_strategy = json["decision_strategy"]
 
         if "bypass-cache" in json:
             bypass_cache = json["bypass-cache"]
@@ -75,7 +75,6 @@ class SettingsStorage:
             obj = {"error": "There are no saved settings for the given UUID!"}
             return json.dumps(obj)
 
-        print(settings)
         return settings
 
     def set_settings(self, uuid: str, settings: object) -> str:
