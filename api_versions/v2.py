@@ -41,21 +41,6 @@ def get_state():
     return jsonify(result)
 
 
-@v2.route("/settings", methods=["GET"])
-def get_settings():
-    json = request.get_json()
-    uuid = json["uuid"]
-    return jsonify(settings_storage.get_settings(uuid))
-
-
-@v2.route("/settings", methods=["POST"])
-def set_settings():
-    json = request.get_json()
-    uuid = json["uuid"]
-    settings = json["settings"]
-    return jsonify(settings_storage.set_settings(uuid, settings))
-
-
 @v2.route("/capabilities", methods=["GET"])
 def get_available_capabilities():
     result = {

@@ -28,8 +28,8 @@ class DetectionSettings:
 
         decision_strategy = settings_json["decision_strategy"]
 
-        if "bypass-cache" in settings_json:
-            bypass_cache = settings_json["bypass-cache"]
+        if "bypass_cache" in settings_json:
+            bypass_cache = settings_json["bypass_cache"]
             return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
 
         return DetectionSettings(detection_methods, decision_strategy)
@@ -71,7 +71,7 @@ class SettingsStorage:
     def get_settings(self, uuid: str) -> object:
         settings_string = self._get_settings(uuid)
 
-        if self is None:
+        if settings_string is None:
             obj = {"error": "There are no saved settings for the given UUID!"}
             return obj
 

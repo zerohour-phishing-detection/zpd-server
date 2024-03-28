@@ -70,9 +70,14 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
 ##########################################################
 """)
     session = session_storage.get_session(uuid, data.url)
-    settings_json = settings_storage.get_settings(uuid)
 
-    settings = DetectionSettings.from_json(settings_json)
+    settings_json = settings_storage.get_settings(uuid)
+    
+    settings = DetectionSettings()
+    if "error" not in settings_json:
+        settings = DetectionSettings.from_json(settings_json)
+        
+    print(settings.bypass_cache)
 
     if not settings.bypass_cache:
         with TimeIt("cache check"):
