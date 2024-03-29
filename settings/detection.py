@@ -12,8 +12,8 @@ class DetectionSettings(Settings):
         self,
         detection_methods: list[str] = ["dst"],
         decision_strategy: str = "majority",
-        bypass_cache: bool = False,
         methods_settings: dict[str, Settings] = DETECTION_METHODS_SETTINGS,
+        bypass_cache: bool = False,
     ):
         self.detection_methods = detection_methods
         self.decision_strategy = decision_strategy
@@ -38,8 +38,8 @@ class DetectionSettings(Settings):
 
         if "bypass_cache" in settings_json:
             bypass_cache = settings_json["bypass_cache"]
-            return DetectionSettings(detection_methods, decision_strategy, methods_settings)
+            return DetectionSettings(
+                detection_methods, decision_strategy, methods_settings, bypass_cache
+            )
 
-        return DetectionSettings(
-            detection_methods, decision_strategy, methods_settings, bypass_cache
-        )
+        return DetectionSettings(detection_methods, decision_strategy, methods_settings)

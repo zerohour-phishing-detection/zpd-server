@@ -21,7 +21,8 @@ class Random(DetectionMethod):
         """
 
         with TimeIt("random detection method"):
-            random.seed(settings.seed)
+            if settings.seed != "":
+                random.seed(settings.seed)
             rand = random.randint(-1, 1)
 
             result = ResultType(rand)

@@ -9,5 +9,4 @@ class RandomSettings(Settings):
 
     def from_json(self, settings_json: object) -> "RandomSettings":
         seed = settings_json["seed"]
-        print(seed)
         return RandomSettings(seed)
