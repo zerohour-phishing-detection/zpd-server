@@ -14,7 +14,7 @@ class Random(DetectionMethod):
     It can be used to test the decision strategies.
     """
 
-    async def run(self, *args, **kwargs) -> ResultType:
+    async def run(self, a, b, c, settings) -> ResultType:
         """
         This method computes a random result.
         """

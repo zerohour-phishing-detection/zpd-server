@@ -3,10 +3,11 @@ import hashlib
 import os
 
 from registry import DECISION_STRATEGIES, DETECTION_METHODS
+from settings import SettingsStorage
+from settings.detection import DetectionSettings
 from utils.logging import main_logger
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
-from utils.settings import DetectionSettings, SettingsStorage
 from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
@@ -105,10 +106,16 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
     results = []
 
     for method in settings.detection_methods:
+        if method not in DETECTION_METHODS:
+            raise (f"The detection method {method} is not implemented.")
+
         logger.info(f"Started running method {method}")
+
         results.append(
             asyncio.run(
-                DETECTION_METHODS[method].run(data.url, data.screenshot_url, uuid, data.pagetitle)
+                DETECTION_METHODS[method].run(
+                    data.url, data.screenshot_url, data.pagetitle, settings.methods_settings[method]
+                )
             )
         )
 

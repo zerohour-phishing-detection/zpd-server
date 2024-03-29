@@ -12,6 +12,7 @@ from logo_finders.vision_logo_detection import VisionLogoDetection
 from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
 from search_engines.text.google import GoogleTextSearchEngine
+from settings.dst import DSTSettings
 from utils import domains
 from utils.async_threads import FutureGroup, ThreadWorker, async_first
 from utils.logging import main_logger
@@ -48,7 +49,9 @@ logo_classifier = joblib.load("saved-classifiers/gridsearch_clf_rt_recall.joblib
 
 
 class DST(DetectionMethod):
-    async def run(self, url, screenshot_url, uuid, pagetitle, image64="") -> ResultType:
+    async def run(
+        self, url: str, screenshot_url: str, pagetitle: str, settings: DSTSettings = DSTSettings()
+    ) -> ResultType:
         url_domain = domains.get_hostname(url)
         url_registered_domain = domains.get_registered_domain(url_domain)
 

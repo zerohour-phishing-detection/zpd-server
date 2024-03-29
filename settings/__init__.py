@@ -1,56 +1,18 @@
 import json
 import sqlite3
+from abc import ABC, abstractmethod
 from datetime import datetime
 
-from registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.logging import main_logger
 
-logger = main_logger.getChild("utils.settings")
+logger = main_logger.getChild("settings")
 
 
-class DetectionSettings:
-    detection_methods: list[str]
-    decision_strategy: str
-    bypass_cache: bool
-
-    def __init__(
-        self,
-        detection_methods: list[str] = ["dst"],
-        decision_strategy: str = "majority",
-        bypass_cache: bool = False,
-    ):
-        self.detection_methods = detection_methods
-        self.decision_strategy = decision_strategy
-        self.bypass_cache = bypass_cache
-
+class Settings(ABC):
     @staticmethod
-    def from_json(settings_json: object) -> "DetectionSettings":
-        detection_methods = settings_json["detection_methods"]
-
-        decision_strategy = settings_json["decision_strategy"]
-
-        if "bypass_cache" in settings_json:
-            bypass_cache = settings_json["bypass_cache"]
-            return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
-
-        return DetectionSettings(detection_methods, decision_strategy)
-
-    @staticmethod
-    def verify_json(settings_json: object) -> bool:
-        if "detection_methods" not in settings_json:
-            return False
-
-        if "decision_strategy" not in settings_json:
-            return False
-
-        for methods in settings_json["detection_methods"]:
-            if methods not in DETECTION_METHODS:
-                return False
-
-        if settings_json["decision_strategy"] not in DECISION_STRATEGIES:
-            return False
-
-        return True
+    @abstractmethod
+    def from_json(settings_json: object) -> "Settings":
+        pass
 
 
 class SettingsStorage:
@@ -99,10 +61,6 @@ class SettingsStorage:
         storage_conn = sqlite3.connect(self.db_path)
 
         ok = True
-
-        if not DetectionSettings.verify_json(settings_json):
-            logger.error(f"The JSON body sent by {uuid} for the settings is not valid.")
-            return False
 
         try:
             timestamp = datetime.now()
