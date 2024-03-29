@@ -84,8 +84,6 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
     if settings_json is not None:
         settings = DetectionSettings.from_json(settings_json)
 
-    print(settings.bypass_cache)
-
     if not settings.bypass_cache:
         with TimeIt("cache check"):
             # Check if URL is in cache or still processing
