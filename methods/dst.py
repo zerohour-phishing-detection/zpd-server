@@ -26,10 +26,6 @@ SESSION_FILE_STORAGE_PATH = "files/"
 # Page loading timeout for web driver
 WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
 
-# Which logo finder to use, 1 for `reverse_logo_region_search`, 2 for `vision_logo_detection`
-LOGO_FINDER = 2
-
-
 # Thread worker instance shared for different concurrent parts
 worker = ThreadWorker()
 screenshot_worker = ThreadWorker(
@@ -92,7 +88,7 @@ class DST(DetectionMethod):
                 return ResultType.LEGITIMATE
 
         with TimeIt("image-only reverse page search"):
-            if LOGO_FINDER == 1:
+            if settings.logo_finder == 0:
                 logo_finder = ReverseLogoRegionSearch(
                     reverse_image_search_engines=[GoogleReverseImageSearchEngine()],
                     htmlsession=html_session,
