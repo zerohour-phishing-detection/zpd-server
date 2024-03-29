@@ -1,6 +1,7 @@
 import random
 
 from methods import DetectionMethod
+from settings.random import RandomSettings
 from utils.logging import main_logger
 from utils.result import ResultType
 from utils.timing import TimeIt
@@ -14,13 +15,15 @@ class Random(DetectionMethod):
     It can be used to test the decision strategies.
     """
 
-    async def run(self, a, b, c, settings) -> ResultType:
+    async def run(self, a, b, c, settings: RandomSettings) -> ResultType:
         """
         This method computes a random result.
         """
 
         with TimeIt("random detection method"):
+            random.seed(settings.seed)
             rand = random.randint(-1, 1)
+
             result = ResultType(rand)
 
             logger.info(f"[RESULT] {result.name} due to randomness.")
