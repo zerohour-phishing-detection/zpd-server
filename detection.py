@@ -43,8 +43,14 @@ class DetectionData:
 
     @staticmethod
     def from_json(json) -> "DetectionData":
-        url = json["url"]
-        screenshot_url = json["url"]
+        # DEPRECARED
+        if "URL" in json:
+            url = json["URL"]
+            screenshot_url = json["URL"]
+        # NEW
+        else:
+            url = json["url"]
+            screenshot_url = json["url"]
 
         # extra json field for evaluation purposes
         # the hash computed in the DB is the this one
