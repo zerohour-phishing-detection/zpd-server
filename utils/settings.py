@@ -2,6 +2,7 @@ import json
 import sqlite3
 from datetime import datetime
 
+from registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.logging import main_logger
 
 logger = main_logger.getChild("utils.settings")
@@ -33,6 +34,23 @@ class DetectionSettings:
             return DetectionSettings(detection_methods, decision_strategy, bypass_cache)
 
         return DetectionSettings(detection_methods, decision_strategy)
+
+    @staticmethod
+    def verify_json(settings_json: object) -> bool:
+        if "detection_methods" not in settings_json:
+            return False
+
+        if "decision_strategy" not in settings_json:
+            return False
+
+        for methods in settings_json["detection_methods"]:
+            if methods not in DETECTION_METHODS:
+                return False
+
+        if settings_json["decision_strategy"] not in DECISION_STRATEGIES:
+            return False
+
+        return True
 
 
 class SettingsStorage:
@@ -80,25 +98,26 @@ class SettingsStorage:
     def set_settings(self, uuid: str, settings_json: object) -> bool:
         storage_conn = sqlite3.connect(self.db_path)
 
-        timestamp = datetime.now()
-        settings_str = json.dumps(settings_json)
-
         ok = True
 
+        if not DetectionSettings.verify_json(settings_json):
+            logger.error(f"The JSON body sent by {uuid} for the settings is not valid.")
+            return False
+
         try:
+            timestamp = datetime.now()
+            settings_str = json.dumps(settings_json)
             if self._get_settings(uuid) is None:
                 storage_conn.execute(
                     "INSERT INTO settings (uuid, settings, timestamp) VALUES (?, ?, ?)",
                     [uuid, settings_str, timestamp],
                 )
-                # obj = {"message": "Succesfuly saved the settings to the server's database!"}
 
             else:
                 storage_conn.execute(
                     "UPDATE settings SET settings = ?, timestamp = ? WHERE uuid = ?",
                     [settings_str, timestamp, uuid],
                 )
-                # obj = {"message": "Succesfuly updated the settings!"}
 
         except Exception as e:
             logger.error(e)

@@ -2,8 +2,8 @@ from flask import Blueprint, jsonify, request
 
 import detection
 from detection import DetectionData
+from registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.logging import main_logger
-from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # Instantiate a logger for this version of the API
 logger = main_logger.getChild("api.v3")
@@ -16,6 +16,11 @@ session_storage = detection.session_storage
 
 # The storage interface for the settings per user
 settings_storage = detection.settings_storage
+
+
+@v3.route("/ping", methods=["GET"])
+def ping():
+    return ("", 200)
 
 
 # TODO: Use jsonify instead for consistency

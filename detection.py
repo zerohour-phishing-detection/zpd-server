@@ -2,8 +2,8 @@ import asyncio
 import hashlib
 import os
 
+from registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.logging import main_logger
-from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
 from utils.settings import DetectionSettings, SettingsStorage
