@@ -1,5 +1,8 @@
-from registry import DETECTION_METHODS_SETTINGS
+from registry import DECISION_STRATEGIES, DETECTION_METHODS, DETECTION_METHODS_SETTINGS
 from settings import Settings
+from utils.logging import main_logger
+
+logger = main_logger.getChild("settings.detection")
 
 
 class DetectionSettings(Settings):
@@ -43,3 +46,19 @@ class DetectionSettings(Settings):
             )
 
         return DetectionSettings(detection_methods, decision_strategy, methods_settings)
+
+    @staticmethod
+    def verify(settings_json: object) -> bool:
+        try:
+            detection_methods = settings_json["detection_methods"]
+            decision_strategy = settings_json["decision_strategy"]
+
+            for methods in detection_methods:
+                DETECTION_METHODS[methods]
+
+            DECISION_STRATEGIES[decision_strategy]
+
+        except Exception:
+            return False
+
+        return True

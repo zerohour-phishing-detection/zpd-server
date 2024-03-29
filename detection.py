@@ -3,8 +3,8 @@ import hashlib
 import os
 
 from registry import DECISION_STRATEGIES, DETECTION_METHODS
-from settings import SettingsStorage
 from settings.detection import DetectionSettings
+from settings.storage import SettingsStorage
 from utils.logging import main_logger
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
