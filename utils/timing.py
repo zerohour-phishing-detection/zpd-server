@@ -21,7 +21,7 @@ class TimeIt:
         self.start = time.time()
         return self
 
-    def __exit__(self):
+    def __exit__(self, exception_type, exception_value, traceback):
         end = time.time()
         diff = end - self.start
 
