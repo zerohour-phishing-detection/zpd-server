@@ -84,13 +84,11 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
     if settings_json is not None:
         settings = DetectionSettings.from_json(settings_json)
 
-    with TimeIt("cache check"):
+    if not settings.bypass_cache:
         # Check if URL is in cache or still processing
         cache_result = session.get_state()
 
-        if cache_result is not None and (
-            not settings.bypass_cache or cache_result.state == "STARTED"
-        ):
+        if cache_result is not None:
             logger.info(
                 f"[STATE] {cache_result.state} [RESULT] {cache_result.result}, for url {data.url}, served from cache"
             )
