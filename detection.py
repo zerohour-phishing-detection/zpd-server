@@ -8,7 +8,6 @@ from settings.storage import SettingsStorage
 from utils.logging import main_logger
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
-from utils.timing import TimeIt
 
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"

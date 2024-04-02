@@ -3,10 +3,6 @@ from datetime import datetime
 
 import tldextract
 
-from utils.logging import main_logger
-
-logger = main_logger.getChild("utils.sessions")
-
 
 # TODO make abstract? can allow for different kinds of storage (in-memory, sqlite database file, mysql database, etc)
 class SessionStorage:
