@@ -20,7 +20,7 @@ settings_storage = detection.settings_storage
 
 @v3.route("/ping", methods=["GET"])
 def ping():
-    return ("", 200)
+    return ""
 
 
 # TODO: Use jsonify instead for consistency
