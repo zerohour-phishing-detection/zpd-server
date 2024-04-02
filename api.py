@@ -6,19 +6,12 @@ import nest_asyncio
 # To avoid RuntimeError('This event loop is already running') when there are many of requests
 from flask import Flask, render_template
 
-import detection
 from api_versions.v1 import v1
 from api_versions.v2 import v2
 from api_versions.v3 import v3
 from utils.logging import main_logger
 
 nest_asyncio.apply()
-
-# The storage interface for the sessions
-session_storage = detection.session_storage
-
-# The storage interface for the settings per user
-settings_storage = detection.settings_storage
 
 # Instantiate a logger for this HTTP API
 logger = main_logger.getChild("api")
