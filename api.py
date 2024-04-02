@@ -20,7 +20,6 @@ logger = main_logger.getChild("api")
 app = Flask(__name__)
 app.config["DEBUG"] = False
 
-
 @app.route("/")
 def home():
     return render_template("index.html")

@@ -16,7 +16,7 @@ class SettingsStorage:
         storage_conn = sqlite3.connect(self.db_path)
         self._setup_storage(storage_conn)
 
-    def _setup_storage(self, storage_conn):
+    def _setup_storage(self, storage_conn: sqlite3.Connection):
         sql_q_db = """
             CREATE TABLE IF NOT EXISTS "settings" (
                 "uuid"	string,
@@ -25,7 +25,7 @@ class SettingsStorage:
             );"""
 
         storage_conn.execute(sql_q_db)
-        # storage_conn.commit()
+        storage_conn.commit()
         storage_conn.close()
 
     def _get_settings(self, uuid: str) -> str:
@@ -77,7 +77,7 @@ class SettingsStorage:
             logger.error(e)
             ok = False
 
-        # storage_conn.commit()
+        storage_conn.commit()
         storage_conn.close()
 
         return ok
