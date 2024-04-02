@@ -23,9 +23,6 @@ from utils.timing import TimeIt
 # Where to store temporary session files, such as screenshots
 SESSION_FILE_STORAGE_PATH = "files/"
 
-# Page loading timeout for web driver
-WEB_DRIVER_PAGE_LOAD_TIMEOUT = 5
-
 # Thread worker instance shared for different concurrent parts
 worker = ThreadWorker()
 screenshot_worker = ThreadWorker(
