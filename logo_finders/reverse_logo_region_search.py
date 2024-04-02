@@ -123,7 +123,7 @@ class ReverseLogoRegionSearch(LogoFinder):
         for region_data, logo_proba in logo_probas:
             self._logger.info(f"Handling region {region_data.index}, with logo proba {logo_proba}")
 
-            future_group.schedule(lambda region_data: revimg_search_engine.query(region_data.region))
+            future_group.schedule([region_data], (lambda region_data: revimg_search_engine.query(region_data.region)))
 
             # Limit to the top 3 regions
             region_count += 1
