@@ -44,7 +44,7 @@ class DetectionData:
 
     @staticmethod
     def from_json(json) -> "DetectionData":
-        # DEPRECARED
+        # DEPRECATED
         if "URL" in json:
             url = json["URL"]
             screenshot_url = json["URL"]
