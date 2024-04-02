@@ -2,8 +2,8 @@ from flask import Blueprint, jsonify, request
 
 import detection
 from detection import DetectionData
+from registry import DECISION_STRATEGIES, DETECTION_METHODS
 from utils.logging import main_logger
-from utils.registry import DECISION_STRATEGIES, DETECTION_METHODS
 
 # Instantiate a logger for this version of the API
 logger = main_logger.getChild("api.v2")
@@ -18,9 +18,10 @@ session_storage = detection.session_storage
 @v2.route("/check", methods=["POST"])
 def check():
     json = request.get_json()
+    uuid = json["uuid"]
     data = DetectionData.from_json(json)
 
-    return detection.test(data).to_json_str()
+    return detection.check(uuid, data).to_json_str()
 
 
 @v2.route("/state", methods=["POST"])
@@ -37,16 +38,6 @@ def get_state():
     return jsonify(result)
 
 
-@v2.route("/settings", methods=["POST"])
-def set_settings():
-    # json = request.get_json()
-    # uuid = json["uuid"]
-    # json_settings = json["settings"]
-
-    # TODO change return
-    return jsonify({"status": "success"})
-
-
 @v2.route("/capabilities", methods=["GET"])
 def get_available_capabilities():
     result = {
@@ -54,7 +45,3 @@ def get_available_capabilities():
         "decision_strategies": list(DECISION_STRATEGIES.keys()),
     }
     return jsonify(result)
-
-
-# @v2.route("/data", methods=["DELETE"])
-# def delete_data():
