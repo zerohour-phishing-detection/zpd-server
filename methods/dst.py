@@ -25,10 +25,7 @@ SESSION_FILE_STORAGE_PATH = "files/"
 
 # Thread worker instance shared for different concurrent parts
 worker = ThreadWorker()
-screenshot_worker = ThreadWorker(
-    init=lambda: ScreenShotter(),
-    preprocessor=lambda task, ss: (task[3], task[1], check_image(ss=ss, *task)),
-)
+screenshot_worker = ThreadWorker(init=lambda: ScreenShotter(), preprocessor=lambda args, task, ss: (args[3], args[1], check_image(ss=ss, *args)))
 
 # Instantiate a logger for this detection method
 logger = main_logger.getChild("methods.dst")
@@ -131,7 +128,7 @@ class DST(DetectionMethod):
             # Check all found URLs
             for index, resulturl in enumerate(url_list_text + url_list_img):
                 # Schedule operation check_image() with the following arguments
-                screenshot_group.schedule([out_dir, index, session_file_path, resulturl])
+                screenshot_group.schedule([out_dir, index, session_file_path, resulturl], [])
 
             resulturl, index, b = await async_first(
                 stream.iterate(screenshot_group.generate())

@@ -81,7 +81,7 @@ class ThreadWorker:
                 self.threadlocal.mydata = init()
         else:
             initwrap = None
-        self.executor = ThreadPoolExecutor(initializer=initwrap, max_workers=1)
+        self.executor = ThreadPoolExecutor(initializer=initwrap)
         self.preprocessor = preprocessor
 
     def new_future_group(self) -> FutureGroup:
