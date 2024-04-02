@@ -19,7 +19,6 @@ logger = main_logger.getChild("api")
 # Initiate Flask app
 app = Flask(__name__)
 app.config["DEBUG"] = False
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024  # 10KiB max payload size
 
 
 @app.route("/")

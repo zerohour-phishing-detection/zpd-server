@@ -25,7 +25,7 @@ class SettingsStorage:
             );"""
 
         storage_conn.execute(sql_q_db)
-        storage_conn.commit()
+        # storage_conn.commit()
         storage_conn.close()
 
     def _get_settings(self, uuid: str) -> str:
@@ -77,7 +77,7 @@ class SettingsStorage:
             logger.error(e)
             ok = False
 
-        storage_conn.commit()
+        # storage_conn.commit()
         storage_conn.close()
 
         return ok
