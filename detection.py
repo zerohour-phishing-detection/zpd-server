@@ -106,7 +106,7 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
 
     for method in settings.detection_methods:
         if method not in DETECTION_METHODS:
-            raise (f"The detection method {method} is not implemented.")
+            raise ValueError(f"The detection method {method} doesn't exist.")
 
         logger.info(f"Started running method {method}")
 
