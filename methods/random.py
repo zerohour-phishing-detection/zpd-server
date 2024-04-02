@@ -4,7 +4,6 @@ from methods import DetectionMethod
 from settings.random import RandomSettings
 from utils.logging import main_logger
 from utils.result import ResultType
-from utils.timing import TimeIt
 
 logger = main_logger.getChild("methods.random")
 
@@ -20,13 +19,13 @@ class Random(DetectionMethod):
         This method computes a random result.
         """
 
-        with TimeIt("random detection method"):
-            if settings.seed != "":
-                random.seed(settings.seed)
-            rand = random.randint(-1, 1)
+        if settings.seed != "":
+            random.seed(settings.seed)
 
-            result = ResultType(rand)
+        rand = random.randint(-1, 1)
 
-            logger.info(f"[RESULT] {result.name} due to randomness.")
+        result = ResultType(rand)
 
-            return result
+        logger.info(f"[RESULT] {result.name} due to randomness.")
+
+        return result
