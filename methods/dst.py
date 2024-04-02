@@ -206,7 +206,7 @@ async def check_search_results(url_registered_domain, found_domains, worker: Thr
         for domain in found_domains:
             future_group.schedule(
                 (url_registered_domain, domain),
-                (lambda url_registered_domain, domain: check_url(url_registered_domain, domain)),
+                check_url,
             )
 
         return future_group.any()
