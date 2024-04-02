@@ -6,6 +6,11 @@ logger = main_logger.getChild("settings.detection")
 
 
 class DetectionSettings(Settings):
+    """
+    The settings class for the detection module. It contains general setting of the
+    detection process including the detection methods that are selected to run and their settings.
+    """
+
     detection_methods: list[str]
     decision_strategy: str
     bypass_cache: bool
