@@ -5,6 +5,7 @@ import os
 from registry import DECISION_STRATEGIES, DETECTION_METHODS
 from settings.detection import DetectionSettings
 from settings.storage import SettingsStorage
+from utils.archive import Archive
 from utils.logging import main_logger
 from utils.result import DetectionResult, ResultType
 from utils.sessions import SessionStorage
@@ -21,11 +22,17 @@ DB_PATH_SESSIONS = "db/sessions.db"
 # Database path for the settings
 DB_PATH_SETTINGS = "db/settings.db"
 
+# Result archive path
+ARCHIVE_PATH = "db/archive.csv"
+
 # The storage interface for the sessions
 session_storage = SessionStorage(DB_PATH_SESSIONS, True)
 
 # The storage interface for the settings per user
 settings_storage = SettingsStorage(DB_PATH_SETTINGS)
+
+# The instance used for archiving results
+archive = Archive(ARCHIVE_PATH)
 
 # Instantiate a logger for the phishing detection
 logger = main_logger.getChild("detection")
@@ -117,5 +124,7 @@ def check(uuid: str, data: DetectionData) -> DetectionResult:
 
     result = DECISION_STRATEGIES[settings.decision_strategy].decide(results)
     session.set_state(result.name, "DONE")
+
+    archive.append(uuid, data.url, settings_json, result.name)
 
     return DetectionResult(data.url, url_hash, "DONE", result)
