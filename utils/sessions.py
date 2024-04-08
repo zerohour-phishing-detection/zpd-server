@@ -15,7 +15,7 @@ class SessionStorage:
     shared = False
     storage = None
 
-    def __init__(self, db_path, shared=False):
+    def __init__(self, db_path, shared=True):
         self.shared = shared
         self.storage = db_path
 

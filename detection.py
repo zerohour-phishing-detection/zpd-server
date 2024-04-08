@@ -22,7 +22,7 @@ DB_PATH_SESSIONS = "db/sessions.db"
 DB_PATH_SETTINGS = "db/settings.db"
 
 # The storage interface for the sessions
-session_storage = SessionStorage(DB_PATH_SESSIONS, False)
+session_storage = SessionStorage(DB_PATH_SESSIONS, True)
 
 # The storage interface for the settings per user
 settings_storage = SettingsStorage(DB_PATH_SETTINGS)
