@@ -14,7 +14,7 @@ DETECTION_METHODS: dict[str, DetectionMethod] = {
 DETECTION_METHODS_SETTINGS: dict[str, Settings] = {"dst": DSTSettings(), "random": RandomSettings()}
 
 DECISION_STRATEGIES: dict[str, DecisionStrategy] = {
-    "strict": Strict(),
     "majority": Majority(),
     "unanimous": Unanimous(),
+    "strict": Strict(),
 }
