@@ -46,6 +46,3 @@ This section contains some information regarding the structure of the files and 
 
 ## Acknowledgment:
 The authors wish to express their gratitude to Ardela Isuf and Sam Cantineau for their work in this project.
-
-## License:
-CC Attribution 4.0 International 
