@@ -45,7 +45,8 @@ class SettingsStorage:
         settings_string = self._get_settings(uuid)
 
         if settings_string is None:
-            return
+            self.set_settings(uuid, DetectionSettings().to_json())
+            settings_string = self._get_settings(uuid)
 
         settings_json = json.loads(settings_string)
         return settings_json

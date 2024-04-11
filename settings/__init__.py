@@ -13,4 +13,8 @@ class Settings(ABC):
         Static method used to convert a JSON object to a Settings object.
         """
 
-        pass
+    @abstractmethod
+    def to_json(self) -> object:
+        """
+        Method used to convert a Settings object to a JSON object.
+        """

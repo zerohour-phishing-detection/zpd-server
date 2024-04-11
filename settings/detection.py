@@ -52,6 +52,20 @@ class DetectionSettings(Settings):
 
         return DetectionSettings(detection_methods, decision_strategy, methods_settings)
 
+    def to_json(self) -> object:
+        settings = {
+            "detection_methods": self.detection_methods,
+            "decision_strategy": self.decision_strategy,
+        }
+
+        for method in self.methods_settings:
+            settings.update({method: self.methods_settings[method].to_json()})
+
+        if self.bypass_cache:
+            settings.update({"bypass_cache": self.bypass_cache})
+
+        return settings
+
     @staticmethod
     def verify(settings_json: object) -> bool:
         try:

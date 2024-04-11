@@ -14,3 +14,6 @@ class DSTSettings(Settings):
         logo_finder = self.LOGO_FINDERS[settings_json["logo_finder"]]
 
         return DSTSettings(logo_finder)
+
+    def to_json(self) -> object:
+        return {"logo_finder": list(self.LOGO_FINDERS.keys())[self.logo_finder]}

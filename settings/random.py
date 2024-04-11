@@ -10,3 +10,6 @@ class RandomSettings(Settings):
     def from_json(self, settings_json: object) -> "RandomSettings":
         seed = settings_json["seed"]
         return RandomSettings(seed)
+
+    def to_json(self) -> object:
+        return {"seed": self.seed}
