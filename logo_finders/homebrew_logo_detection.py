@@ -131,6 +131,5 @@ class ReverseLogoRegionSearch(LogoFinder):
             # Limit to the top `homebrew_regions` regions
             if region_count >= settings.homebrew_regions:
                 break
-        
-        # ADD SETTINGS HERE - That 7
+            
         return stream.flatmap(future_group.generate(), lambda res: stream.iterate(res) | pipe.take(settings.homebrew_search_results))
