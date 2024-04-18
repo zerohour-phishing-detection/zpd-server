@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 import utils.region_detection as region_detection
 from logo_finders.base import LogoFinder
 from search_engines.image.base import ReverseImageSearchEngine
+from settings.dst import DSTSettings
 from utils.async_threads import ThreadWorker
 from utils.logging import main_logger
 from utils.region_detection import RegionData
@@ -37,7 +38,7 @@ class ReverseLogoRegionSearch(LogoFinder):
         self.htmlsession = htmlsession
         self.clf_logo = clf
 
-    async def find(self, img_path: str) -> AsyncIterator[str]:
+    async def find(self, img_path: str, settings: DSTSettings) -> AsyncIterator[str]:
         self._logger.debug("Preparing for search info")
 
         # Finds the regions in the image
@@ -48,7 +49,7 @@ class ReverseLogoRegionSearch(LogoFinder):
             # For each reverse image search engine, try to find the origin of each logo region
             with TimeIt(f'Logo reverse image search using {revimg_search_engine.name}'):
                 try:
-                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine):
+                    async for res in self.find_logo_origins(region_predictions, revimg_search_engine, settings):
                         yield res
 
                 except Exception:
@@ -108,7 +109,7 @@ class ReverseLogoRegionSearch(LogoFinder):
         except Exception:
             self._logger.error(f'Exception while finding regions for img_path {img_path}', exc_info=True)
 
-    def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine) -> AsyncIterator[str]:
+    def find_logo_origins(self, logo_probas: list[tuple[RegionData, float]], revimg_search_engine: ReverseImageSearchEngine, settings: DSTSettings) -> AsyncIterator[str]:
         """
         Find the origin of the 3 highest-logo-probability regions, using the given search engine.
         Uses async threads to concurrenlty find logo origin.
@@ -125,9 +126,11 @@ class ReverseLogoRegionSearch(LogoFinder):
 
             future_group.schedule([region_data], (lambda region_data: revimg_search_engine.query(region_data.region)))
 
-            # Limit to the top 3 regions
             region_count += 1
-            if region_count >= 3:
+            
+            # Limit to the top `homebrew_regions` regions
+            if region_count >= settings.homebrew_regions:
                 break
         
-        return stream.flatmap(future_group.generate(), lambda res: stream.iterate(res) | pipe.take(7))
+        # ADD SETTINGS HERE - That 7
+        return stream.flatmap(future_group.generate(), lambda res: stream.iterate(res) | pipe.take(settings.homebrew_search_results))

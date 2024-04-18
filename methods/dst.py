@@ -7,7 +7,7 @@ from aiostream import pipe, stream
 from requests_html import HTMLSession
 
 import utils.classifiers as cl
-from logo_finders.reverse_logo_region_search import ReverseLogoRegionSearch
+from logo_finders.homebrew_logo_detection import ReverseLogoRegionSearch
 from logo_finders.vision_logo_detection import VisionLogoDetection
 from methods import DetectionMethod
 from search_engines.image.google import GoogleReverseImageSearchEngine
@@ -62,7 +62,8 @@ class DST(DetectionMethod):
         with TimeIt("text-only reverse page search"):
             # Initiate text-only reverse image search instance
             search_engine = GoogleTextSearchEngine()
-            url_list_text = list(itertools.islice(search_engine.query(pagetitle), 7))
+            
+            url_list_text = list(itertools.islice(search_engine.query(pagetitle), settings.text_search_results))
 
             # Get all unique domains from URLs
             domain_list_text = set([domains.get_hostname(url) for url in url_list_text])
@@ -93,7 +94,7 @@ class DST(DetectionMethod):
 
             async def search_images():
                 urls = []
-                async for url in logo_finder.find(os.path.join(session_file_path, "screen.png")):
+                async for url in logo_finder.find(os.path.join(session_file_path, "screen.png"), settings):
                     urls.append(url)
                 return urls
 
@@ -154,7 +155,7 @@ class DST(DetectionMethod):
         return ResultType.INCONCLUSIVE
 
 
-def check_image(out_dir, index, session_file_path, resulturl, ss=screenshotter):
+def check_image(out_dir, index, session_file_path, resulturl, settings: DSTSettings, ss=screenshotter):
     """
     Compare images, of a screenshot that will be taken of resulturl using the screenshotter,
     with the stored screenshot at the session_file_path.
@@ -182,7 +183,7 @@ def check_image(out_dir, index, session_file_path, resulturl, ss=screenshotter):
     except Exception:
         logger.exception("Error calculating structural_sim")
 
-    if ((emd < 0.001) and (s_sim > 0.70)) or ((emd < 0.002) and (s_sim > 0.80)):
+    if ((emd < settings.emd_1) and (s_sim > settings.s_sim_1)) or ((emd < settings.emd_2) and (s_sim > settings.s_sim_2)):
         # Image comparison does conclude being similar
         b = True
 

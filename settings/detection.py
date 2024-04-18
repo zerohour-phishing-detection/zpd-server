@@ -61,8 +61,7 @@ class DetectionSettings(Settings):
         for method in self.methods_settings:
             settings.update({method: self.methods_settings[method].to_json()})
 
-        if self.bypass_cache:
-            settings.update({"bypass_cache": self.bypass_cache})
+        settings.update({"bypass_cache": self.bypass_cache})
 
         return settings
 
