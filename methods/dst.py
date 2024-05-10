@@ -186,10 +186,9 @@ def check_image(out_dir, index, session_file_path, resulturl, settings: DSTSetti
     if ((emd < settings.emd_1) and (s_sim > settings.s_sim_1)) or ((emd < settings.emd_2) and (s_sim > settings.s_sim_2)):
         # Image comparison does conclude being similar
         b = True
-
-    # Image comparison could not conclude similarity
-    b = False
-
+    else:
+        # Image comparison could not conclude similarity
+        b = False
     logger.info(
         f"Finished Comparing url '{resulturl},' emd = '{emd}', structural_sim = '{s_sim}': {b}"
     )
